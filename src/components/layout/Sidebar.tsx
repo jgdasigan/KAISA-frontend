@@ -62,7 +62,7 @@ export const Sidebar = ({ onSelectChats }: SidebarProps) => {
       </div>
       <div className="flex flex-col gap-2 px-4 text-xs text-kaisa-midnight/70">
         <div className="group/profile flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 shadow-sm transition-all duration-200">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kaisa-yellow text-kaisa-midnight font-semibold">
+          <div className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-full bg-kaisa-yellow text-kaisa-midnight font-semibold">
             {authStore.userDetails?.given_name?.[0] || "K"}
           </div>
           <div className="min-w-0 flex-1 flex-col text-left text-xs hidden group-hover/profile:flex lg:flex">
