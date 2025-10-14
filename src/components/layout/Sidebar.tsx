@@ -46,7 +46,15 @@ export const Sidebar = ({ onSelectChats }: SidebarProps) => {
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-kaisa-blue shadow-inner">
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className={cn("hidden text-left text-xs font-medium text-kaisa-midnight/80 transition lg:hidden", "group-hover/item:block", isActive && "text-kaisa-blue")}>{label}</span>
+                <span
+                  className={cn(
+                    "hidden flex-1 truncate text-left text-xs font-medium text-kaisa-midnight/80 transition lg:hidden",
+                    "group-hover:flex",
+                    isActive && "text-kaisa-blue"
+                  )}
+                >
+                  {label}
+                </span>
               </button>
             );
           })}
