@@ -61,25 +61,26 @@ export const Sidebar = ({ onSelectChats }: SidebarProps) => {
         </nav>
       </div>
       <div className="flex flex-col gap-2 px-4 text-xs text-kaisa-midnight/70">
-        <div className="flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 shadow-sm">
+        <div className="group/profile flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 shadow-sm transition-all duration-200">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kaisa-yellow text-kaisa-midnight font-semibold">
             {authStore.userDetails?.given_name?.[0] || "K"}
           </div>
-          <div className=" hidden group-hover:flex lg:group-hover:flex flex-col text-left text-xs">
-            <span className="font-semibold text-kaisa-midnight">
+          <div className="min-w-0 flex-1 flex-col text-left text-xs hidden group-hover/profile:flex lg:flex">
+            <span className="truncate text-sm font-semibold text-kaisa-midnight">
               {authStore.userDetails?.given_name || "KAISA User"}
             </span>
-            <span className="text-kaisa-midnight/70">{authStore.userDetails?.email || "user@kaisa.ai"}</span>
+            <span className="truncate text-[11px] text-kaisa-midnight/70">
+              {authStore.userDetails?.email || "user@kaisa.ai"}
+            </span>
           </div>
+          <button
+            type="button"
+            onClick={() => authStore.clearSession()}
+            className="hidden h-8 w-8 items-center justify-center rounded-full bg-kaisa-red/85 text-white shadow-sm transition hover:bg-kaisa-red group-hover/profile:inline-flex"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => authStore.clearSession()}
-          className="hidden group-hover:flex lg:group-hover:flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 text-xs font-medium text-kaisa-blue shadow-sm transition hover:bg-kaisa-red/80 hover:text-white"
-        >
-          <LogOut className="h-5 w-5" />
-          Log out
-        </button>
       </div>
     </aside>
   );
