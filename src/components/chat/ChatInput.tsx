@@ -32,10 +32,10 @@ export const ChatInput = ({ onSubmit, disabled }: ChatInputProps) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative flex flex-col gap-4 rounded-3xl border border-white/20 bg-white/40 p-5 shadow-[0_32px_80px_-30px_rgba(12,76,179,0.45)] backdrop-blur-2xl"
+      className="relative flex flex-col gap-4 rounded-3xl border border-white/20 bg-white/65 p-3 shadow-[0_18px_48px_-28px_rgba(12,76,179,0.3)] backdrop-blur-xl"
     >
       <textarea
-        className="h-28 w-full resize-none rounded-2xl border border-transparent bg-white/70 px-5 py-4 text-sm text-kaisa-midnight outline-none transition focus:border-kaisa-blue/40 focus:bg-white"
+        className="h-20 w-full resize-none rounded-2xl border border-transparent bg-white/85 px-4 py-3 text-sm text-kaisa-midnight outline-none transition focus:border-kaisa-blue/40 focus:bg-white"
         placeholder="Ask KAISA anything..."
         value={message}
         onChange={(event) => setMessage(event.target.value)}

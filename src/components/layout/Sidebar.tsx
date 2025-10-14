@@ -6,9 +6,9 @@ import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/utils/cn";
 
 const navItems = [
-  { icon: Disc, label: "Workspace", key: "workspace" },
-  { icon: MessageCircle, label: "Chats", key: "chats" },
-  { icon: FileText, label: "Library", key: "library" },
+  { icon: Disc, label: "New chat", key: "workspace" },
+  { icon: MessageCircle, label: "Chat history", key: "chats" },
+  { icon: FileText, label: "Agent library", key: "library" },
   { icon: Settings, label: "Settings", key: "settings" },
 ];
 
@@ -19,46 +19,58 @@ type SidebarProps = {
 export const Sidebar = ({ onSelectChats }: SidebarProps) => {
   const [active, setActive] = useState<string>("workspace");
   const authStore = useAuthStore();
+
   return (
-    <aside className="hidden w-24 flex-shrink-0 flex-col items-center justify-between border-r border-white/10 bg-white/30 py-6 backdrop-blur-xl lg:flex">
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-kaisa-blue text-white shadow-lg">
-          <Disc className="h-5 w-5" />
-        </div>
-        <nav className="flex flex-1 flex-col items-center gap-3 text-kaisa-midnight/70">
-          {navItems.map(({ icon: Icon, label, key }) => (
-            <button
-              key={label}
-              type="button"
-              className={cn(
-                "relative inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/60 text-kaisa-blue shadow-sm transition",
-                active === key
-                  ? "bg-gradient-to-br from-kaisa-blue/95 via-kaisa-blue to-kaisa-midnight/90 text-white shadow-[0_12px_32px_-12px_rgba(12,76,179,0.7)]"
-                  : "hover:bg-kaisa-yellow/80 hover:text-kaisa-midnight"
-              )}
-              aria-label={label}
-              onClick={() => {
-                setActive(key);
-                if (key === "chats") {
-                  onSelectChats?.();
-                }
-              }}
-            >
-              <Icon className="h-5 w-5" />
-            </button>
-          ))}
+    <aside className="group hidden w-24 flex-shrink-0 flex-col border-r border-white/10 bg-white/30 py-6 backdrop-blur-xl transition-all duration-200 hover:w-56 lg:flex">
+      <div className="flex flex-1 flex-col gap-6 px-4">
+        <nav className="mt-2 flex flex-1 flex-col gap-2 text-kaisa-midnight/70">
+          {navItems.map(({ icon: Icon, label, key }) => {
+            const isActive = active === key;
+            return (
+              <button
+                key={label}
+                type="button"
+                className={cn(
+                  "group/item flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition-all duration-200",
+                  "bg-white/60 text-kaisa-blue shadow-sm backdrop-blur",
+                  !isActive && "hover:bg-kaisa-yellow/75 hover:text-kaisa-midnight",
+                  isActive && "border border-kaisa-blue/40 bg-kaisa-blue/15 text-kaisa-blue shadow-[0_8px_22px_-12px_rgba(12,76,179,0.45)]"
+                )}
+                onClick={() => {
+                  setActive(key);
+                  if (key === "chats") {
+                    onSelectChats?.();
+                  }
+                }}
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-kaisa-blue shadow-inner">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className={cn("hidden text-left text-xs font-medium text-kaisa-midnight/80 transition lg:hidden", "group-hover/item:block", isActive && "text-kaisa-blue")}>{label}</span>
+              </button>
+            );
+          })}
         </nav>
       </div>
-      <div className="flex flex-col items-center gap-3 text-xs text-kaisa-midnight/70">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kaisa-yellow text-kaisa-midnight font-semibold">
-          {authStore.userDetails?.given_name?.[0] || "K"}
+      <div className="flex flex-col gap-2 px-4 text-xs text-kaisa-midnight/70">
+        <div className="flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kaisa-yellow text-kaisa-midnight font-semibold">
+            {authStore.userDetails?.given_name?.[0] || "K"}
+          </div>
+          <div className=" hidden group-hover:flex lg:group-hover:flex flex-col text-left text-xs">
+            <span className="font-semibold text-kaisa-midnight">
+              {authStore.userDetails?.given_name || "KAISA User"}
+            </span>
+            <span className="text-kaisa-midnight/70">{authStore.userDetails?.email || "user@kaisa.ai"}</span>
+          </div>
         </div>
         <button
           type="button"
           onClick={() => authStore.clearSession()}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/70 text-kaisa-blue shadow-sm transition hover:bg-kaisa-red/80 hover:text-white"
+          className="hidden group-hover:flex lg:group-hover:flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 text-xs font-medium text-kaisa-blue shadow-sm transition hover:bg-kaisa-red/80 hover:text-white"
         >
           <LogOut className="h-5 w-5" />
+          Log out
         </button>
       </div>
     </aside>

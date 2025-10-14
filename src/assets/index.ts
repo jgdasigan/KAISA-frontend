@@ -43,27 +43,19 @@ export const favoriteTopics = [
 
 export const quickActionCards = [
   {
-    title: "Code Generator",
-    caption: "Generate dev-ready components in seconds",
-    prompt: "generate CSS for body: Arial font, dark text, blue gradient background",
+    title: "Curriculum Agent",
+    caption: "Design personalized lesson plans and study paths",
+    prompt: "create a weekly learning plan for 5th-grade math covering fractions and decimals",
   },
   {
-    title: "Presentation & Slide",
-    caption: "Craft polished decks with structured outlines",
-    prompt: "generate a slide design with a clean layout and bold headings",
+    title: "Quizzer Agent",
+    caption: "Generate interactive quizzes and practice tests instantly",
+    prompt: "generate a 10-question multiple-choice quiz on photosynthesis with answers",
   },
   {
-    title: "Marketing Copy",
-    caption: "Write compelling messaging tailored to your audience",
-    prompt: "write a compelling headline for a new e-commerce website",
-  },
-];
-
-export const insightShortcuts = [
-  {
-    title: "Upgrade to KAISA Pro",
-    details: "Unlock premium automations, priority support, and deeper analytics.",
-    action: "Don't miss out",
+    title: "Review Agent",
+    caption: "Summarize lessons and reinforce key concepts for better retention",
+    prompt: "summarize the key points of a english lesson on subject-verb agreement for 7th graders",
   },
 ];
 

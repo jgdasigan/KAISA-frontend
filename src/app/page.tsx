@@ -3,28 +3,31 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { Lightbulb, Sparkles } from "lucide-react";
-import { ActionButton } from "@/components/cards/ActionButton";
+import { useAuthStore } from "@/stores/authStore";
+import { FeatureCard } from "@/components/cards/FeatureCard";
+import { quickActionCards } from "@/assets";
 
 export default function Home() {
+  const { userDetails } = useAuthStore();
+  const userName = userDetails?.given_name || userDetails?.family_name || "there";
+
   return (
     <AppShell>
       <div className="flex flex-1 flex-col items-center justify-center gap-12 px-6">
         <header className="flex flex-col items-center gap-3 text-center text-kaisa-midnight">
-          <h1 className="text-3xl font-semibold">Agent Chat</h1>
-          <p className="max-w-xl text-sm text-kaisa-midnight/70">
-            A chatbot-driven hub that transforms your ideas into presentations, code, and marketing narratives—all in KAISA’s vibrant palette.
+          <h1 className="text-3xl font-semibold">Hello, {userName}.</h1>
+          <p className="max-w-xl text-2xl font-semibold text-transparent bg-gradient-to-r from-kaisa-blue via-kaisa-yellow to-kaisa-red bg-clip-text">
+            What can I help you with?
           </p>
         </header>
 
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <ActionButton icon={Sparkles} label="Sales Performance" variant="ghost" />
-          <ActionButton icon={Lightbulb} label="Customer Insights" />
-          <ActionButton icon={Sparkles} label="Scenario 3" variant="ghost" />
-          <ActionButton icon={Lightbulb} label="Scenario 4" variant="ghost" />
-          <ActionButton icon={Sparkles} label="Scenario 5" variant="ghost" />
+        <div className="grid w-full max-w-4xl gap-5 md:grid-cols-3">
+          {quickActionCards.map((card) => (
+            <FeatureCard key={card.title} {...card} />
+          ))}
         </div>
 
-        <div className="w-full max-w-4xl rounded-3xl border border-white/20 bg-white/60 p-6 shadow-[0_24px_60px_-32px_rgba(12,76,179,0.45)] backdrop-blur-2xl">
+        <div className="w-full max-w-4xl rounded-3xl border border-white/25 bg-white/70 p-4 shadow-[0_24px_60px_-32px_rgba(12,76,179,0.28)] backdrop-blur-xl">
           <ChatInput
             onSubmit={async () => {
               console.info("Chat submission placeholder");
