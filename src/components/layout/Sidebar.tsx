@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, FileText, Settings, Disc, LogOut } from "lucide-react";
+import { MessageCircle, Info, Disc, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/utils/cn";
@@ -8,8 +8,7 @@ import { cn } from "@/utils/cn";
 const navItems = [
   { icon: Disc, label: "New chat", key: "workspace" },
   { icon: MessageCircle, label: "Chat history", key: "chats" },
-  { icon: FileText, label: "Agent library", key: "library" },
-  { icon: Settings, label: "Settings", key: "settings" },
+  { icon: Info, label: "Info", key: "info" },
 ];
 
 type SidebarProps = {
