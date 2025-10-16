@@ -16,6 +16,8 @@ import {
 } from "@/data/agents";
 
 const agentMeta = AGENT_PROFILES_BY_TITLE;
+const LANDING_KAI_MESSAGE =
+  "I’m Teacher KAI, here to guide you today. Ask me your questions, or choose your mentor above: Principal Aralyn for lesson guidance, Tallya for quizzes, or Kuya Revi for step-by-step review tips. Let’s get learning!";
 
 type ChatBubble = {
   id: number;
@@ -26,7 +28,7 @@ type ChatBubble = {
 
 export default function Home() {
   const { userDetails } = useAuthStore();
-  const userName = userDetails?.given_name || userDetails?.family_name || "there";
+  const userName = userDetails?.given_name || userDetails?.family_name || "Joyce";
   const { setActiveAgent, activeAgent } = useAgentStore();
   const { setSessionStarted, sessionStarted, clear } = useChatStore();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -35,8 +37,7 @@ export default function Home() {
     {
       id: 1,
       role: "assistant",
-      content:
-        "Hey there! 👋 I’m Teacher KAI, your guide for today. What are we exploring? Need help with a task, a concept, or just curious about something new?",
+      content: LANDING_KAI_MESSAGE,
       agentId: DEFAULT_AGENT.id,
     },
   ]);
@@ -49,36 +50,54 @@ export default function Home() {
     if (!hasSessionStarted) {
       setHasSessionStarted(true);
       setSessionStarted(true);
+      syncAssistantIntro(DEFAULT_AGENT, DEFAULT_AGENT.content);
     }
   };
 
   const syncAssistantIntro = (
     agent: (typeof AGENT_PROFILES)[keyof typeof AGENT_PROFILES] | typeof DEFAULT_AGENT,
+    overrideContent?: string,
   ) => {
+    const contentToUse = overrideContent ?? agent.content;
     setMessages((prev) => {
       const next = [...prev];
       if (next.length === 0 || next[0]?.role !== "assistant") {
         next.unshift({
           id: Date.now(),
           role: "assistant",
-          content: agent.content,
+          content: contentToUse,
           agentId: agent.id,
         });
       } else {
-        next[0] = { ...next[0], content: agent.content, agentId: agent.id };
+        next[0] = { ...next[0], content: contentToUse, agentId: agent.id };
       }
       return next;
     });
   };
 
-  const applyAgentSelection = (agent: typeof DEFAULT_AGENT | (typeof AGENT_PROFILES)[keyof typeof AGENT_PROFILES]) => {
+  const applyAgentSelection = (
+    agent: typeof DEFAULT_AGENT | (typeof AGENT_PROFILES)[keyof typeof AGENT_PROFILES],
+    options?: { useLandingMessage?: boolean },
+  ) => {
+    const useLandingCopy = options?.useLandingMessage ?? (!hasSessionStarted && agent.id === DEFAULT_AGENT.id);
+
+    if (useLandingCopy) {
+      syncAssistantIntro(agent, LANDING_KAI_MESSAGE);
+      setHasSessionStarted(false);
+      setSessionStarted(false);
+      setSelectedAgentId(null);
+      return;
+    }
+
+    ensureSessionStarted();
+
     if (agent.id !== DEFAULT_AGENT.id) {
-      ensureSessionStarted();
       setSelectedAgentId(agent.id);
+      syncAssistantIntro(agent);
     } else {
       setSelectedAgentId(null);
+      syncAssistantIntro(agent);
     }
-    syncAssistantIntro(agent);
   };
 
   const previousAgentIdRef = useRef<string | undefined>();
@@ -87,8 +106,10 @@ export default function Home() {
     if (!activeAgent) return;
     if (previousAgentIdRef.current === activeAgent.id) return;
     previousAgentIdRef.current = activeAgent.id;
-    applyAgentSelection(activeAgent);
-  }, [activeAgent]);
+
+    const shouldUseLandingCopy = !hasSessionStarted && activeAgent.id === DEFAULT_AGENT.id;
+    applyAgentSelection(activeAgent, { useLandingMessage: shouldUseLandingCopy });
+  }, [activeAgent, hasSessionStarted]);
 
   const propagateMessages = (nextMessages: typeof messages) => {
     setMessages(nextMessages);
@@ -145,18 +166,8 @@ export default function Home() {
     <AppShell
       onNewChat={() => {
         setSelectedAgentId(null);
-        setHasSessionStarted(false);
-        setSessionStarted(false);
-        setMessages([
-          {
-            id: 1,
-            role: "assistant",
-            content: defaultAgent.content,
-            agentId: defaultAgent.id,
-          },
-        ]);
         setActiveAgent(defaultAgent);
-        clear();
+        applyAgentSelection(defaultAgent, { useLandingMessage: true });
       }}
     >
       <div
@@ -170,9 +181,9 @@ export default function Home() {
         {!sessionActive && (
           <>
             <header className="flex flex-col items-center gap-3 text-center text-kaisa-midnight">
-              <h1 className="text-3xl font-semibold">Hello, {userName}.</h1>
+              <h1 className="text-3xl font-semibold">Hello, {userName} 👋</h1>
               <p className="text-xl font-semibold text-kaisa-blue">
-                What can I help you with?
+                Welcome to KAISA
               </p>
             </header>
             <div className="grid w-full max-w-4xl gap-5 md:grid-cols-3">
@@ -257,11 +268,11 @@ export default function Home() {
                   </div>
                   {message.role === "user" && (
                     <Image
-                    src="/images/sender-6.png"
-                    alt={avatarAgent.displayName}
-                    width={52}
-                    height={52}
-                    className="ml-3 mt-1 h-8 w-8 flex-shrink-0 rounded-full bg-kaisa-yellow/5"
+                      src="/images/sender-6.png"
+                      alt={avatarAgent.displayName}
+                      width={52}
+                      height={52}
+                      className="ml-3 mt-1 h-8 w-8 flex-shrink-0 rounded-full bg-kaisa-yellow/5"
                     />
                   )}
                 </div>
