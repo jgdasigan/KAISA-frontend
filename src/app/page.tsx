@@ -16,8 +16,9 @@ export default function Home() {
       <div className="flex flex-1 flex-col items-center justify-center gap-12 px-6">
         <header className="flex flex-col items-center gap-3 text-center text-kaisa-midnight">
           <h1 className="text-3xl font-semibold">Hello, {userName}.</h1>
-          <p className="max-w-xl text-2xl font-semibold text-transparent bg-gradient-to-r from-kaisa-blue via-kaisa-yellow to-kaisa-red bg-clip-text">
-            What can I help you with?
+          {/* <p className="text-xl font-semibold text-transparent bg-gradient-to-r from-[#4FC3F7] to-[#1E88E5] bg-clip-text drop-shadow-[0_1px_2px_rgba(0,0,0,0)]"> */}
+          <p className="text-xl font-semibold text-kaisa-blue">
+          What can I help you with?
           </p>
         </header>
 

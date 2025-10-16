@@ -15,9 +15,9 @@ export const Header = () => {
         >
           <Menu className="h-4 w-4" />
         </button>
-        <div className="flex items-center gap-2">
-          <Image src="/kaisa-logo.svg" alt="KAISA" width={32} height={32} />
-          <span className="text-base font-semibold tracking-wide text-kaisa-midnight">KAISA</span>
+        <div className="fixed top-0 left-2 z-50 flex items-center gap-2 p-3">
+          <Image src="/kaisa-logo.png" alt="KAISA" width={62} height={62} />
+          <span className="text-xl font-semibold tracking-wide text-kaisa-blue">KAISA</span>
         </div>
       </div>
       <div className="hidden items-center gap-3 md:flex">

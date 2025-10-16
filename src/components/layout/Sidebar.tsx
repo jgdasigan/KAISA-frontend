@@ -13,9 +13,10 @@ const navItems = [
 
 type SidebarProps = {
   onSelectChats?: () => void;
+  onSelectInfo?: () => void;
 };
 
-export const Sidebar = ({ onSelectChats }: SidebarProps) => {
+export const Sidebar = ({ onSelectChats, onSelectInfo }: SidebarProps) => {
   const [active, setActive] = useState<string>("workspace");
   const authStore = useAuthStore();
 
@@ -39,6 +40,9 @@ export const Sidebar = ({ onSelectChats }: SidebarProps) => {
                   setActive(key);
                   if (key === "chats") {
                     onSelectChats?.();
+                  }
+                  if (key === "info") {
+                    onSelectInfo?.();
                   }
                 }}
               >
