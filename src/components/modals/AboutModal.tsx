@@ -1,16 +1,39 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 type AboutModalProps = {
   onClose: () => void;
 };
 
 const teamMembers = [
-  { name: "AJ Ganzon", role: "Lead Developer" },
-  { name: "Joyce Dasigan", role: "Fullstack Engineer & UI/UX Designer" },
-  { name: "Nathaniel Dimaunahan", role: "Backend" },
-  { name: "James Ejercito", role: "Backend Engineer" },
+  {
+    name: "AJ Ganzon",
+    role: "Lead Developer",
+    agent: "Kuya Revi",
+    image: "/images/revi.png",
+  },
+  {
+    name: "Nathaniel Dimaunahan",
+    role: "Backend & AI Engineer",
+    agent: "Tallya",
+    image: "/images/tallya.png",
+  },
+  {
+    name: "James Ejercito",
+    role: "Backend & AI Engineer",
+    agent: "Principal Aralyn",
+    image: "/images/aralyn.png",
+  },
+  {
+    name: "Joyce Dasigan",
+    role: "Fullstack Engineer & UI/UX Designer",
+    agent: "Teacher KAI",
+    image: "/images/kai.png",
+  },
+
+
 ];
 
 export const AboutModal = ({ onClose }: AboutModalProps) => {
@@ -90,25 +113,39 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
             </section>
           </>
         ) : (
-          <section className="mx-auto flex h-full max-w-2xl flex-col justify-center gap-6 rounded-2xl bg-kaisa-blue/10 p-10 text-sm text-kaisa-midnight shadow-[0_28px_72px_-48px_rgba(12,76,179,0.45)]">
-            <div className="space-y-2 text-center">
-              <h4 className="text-lg font-semibold text-kaisa-blue">Developed By</h4>
-              <p className="font-semibold">eCloudvalley Digital Technology</p>
-            </div>
-            <div className="space-y-4 text-center">
-              <h4 className="text-lg font-semibold text-kaisa-blue">Development Team</h4>
+          <section className="mx-auto flex h-full max-w-2xl flex-col justify-center gap-6 rounded-2xl bg-kaisa-blue/8 p-10 text-sm text-kaisa-midnight shadow-[0_28px_72px_-48px_rgba(12,76,179,0.45)]">
+            <div className="space-y-3 text-center">
+              <Image
+                src="/kaisa-logo-1.png"
+                alt="KAISA Team"
+                width={80}
+                height={80}
+                className="mx-auto -mt-8"
+                priority
+              />
+              <h4 className="text-lg font-semibold text-kaisa-blue">KAISA Development Team</h4>
               <div className="grid gap-4 md:grid-cols-2">
                 {teamMembers.map((member) => (
                   <div
                     key={member.name}
-                    className="rounded-2xl bg-white/90 px-6 py-4 shadow-[0_18px_48px_-36px_rgba(12,76,179,0.35)]"
+                    className="flex flex-col items-center gap-3 rounded-xl bg-kaisa-blue/10 px-6 py-6 text-center shadow-[0_18px_48px_-36px_rgba(12,76,179,0.35)]"
                   >
-                    <p className="text-base font-semibold text-kaisa-midnight">
-                      {member.name}
-                    </p>
-                    <p className="text-sm text-kaisa-midnight/75">
-                      {member.role}
-                    </p>
+                    <Image
+                      src={member.image}
+                      alt={member.agent}
+                      width={100}
+                      height={100}
+                      className="h-16 w-16"
+                    />
+                    <div className="space-y-1">
+                      <p className="text-base font-semibold text-kaisa-midnight">
+                        {member.name}
+                      </p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-kaisa-blue/90">
+                        Developer of {member.agent}
+                      </p>
+                      <p className="text-[0.63rem] text-kaisa-midnight/75">{member.role}</p>
+                    </div>
                   </div>
                 ))}
               </div>

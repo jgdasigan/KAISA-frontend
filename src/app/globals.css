@@ -21,6 +21,7 @@
   --color-kaisa-midnight: var(--kaisa-midnight);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-poppins: var(--font-poppins);
 }
 
 body {

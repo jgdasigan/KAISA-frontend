@@ -16,12 +16,12 @@ export const Header = () => {
           <Menu className="h-4 w-4" />
         </button>
         <div className="fixed top-0 left-2 z-50 flex items-center gap-2 p-3">
-          <Image src="/kaisa-logo.png" alt="KAISA" width={62} height={62} />
+          <Image src="/kaisa-logo-1.png" alt="KAISA" width={62} height={62} />
           <span className="text-xl font-semibold tracking-wide text-kaisa-blue">KAISA</span>
         </div>
       </div>
       <div className="hidden items-center gap-3 md:flex">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/40 px-4 py-2 text-sm text-kaisa-midnight">
+      <div className="inline-flex items-center gap-2 rounded-full bg-white/40 px-4 py-2 text-sm text-kaisa-midnight font-poppins">
           <Mic className="h-4 w-4 text-kaisa-blue" />
           Voice Input
         </div>
