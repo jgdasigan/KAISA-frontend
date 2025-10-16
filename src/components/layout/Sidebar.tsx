@@ -12,11 +12,12 @@ const navItems = [
 ];
 
 type SidebarProps = {
+  onSelectNewChat?: () => void;
   onSelectChats?: () => void;
   onSelectInfo?: () => void;
 };
 
-export const Sidebar = ({ onSelectChats, onSelectInfo }: SidebarProps) => {
+export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: SidebarProps) => {
   const [active, setActive] = useState<string>("workspace");
   const authStore = useAuthStore();
 
@@ -38,6 +39,9 @@ export const Sidebar = ({ onSelectChats, onSelectInfo }: SidebarProps) => {
                 )}
                 onClick={() => {
                   setActive(key);
+                  if (key === "workspace") {
+                    onSelectNewChat?.();
+                  }
                   if (key === "chats") {
                     onSelectChats?.();
                   }

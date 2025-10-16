@@ -6,7 +6,12 @@ import { Header } from "@/components/layout/Header";
 import { ChatHistoryPanel } from "@/components/layout/ChatHistoryPanel";
 import { AboutModal } from "@/components/modals/AboutModal";
 
-export const AppShell = ({ children }: { children: ReactNode }) => {
+type AppShellProps = {
+  children: ReactNode;
+  onNewChat?: () => void;
+};
+
+export const AppShell = ({ children, onNewChat }: AppShellProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   return (
@@ -14,6 +19,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       <Header />
       <div className="flex flex-1">
         <Sidebar
+          onSelectNewChat={onNewChat}
           onSelectChats={() => setShowHistory((prev) => !prev)}
           onSelectInfo={() => setShowAbout(true)}
         />

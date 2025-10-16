@@ -6,6 +6,7 @@ import type { ChatMessage } from "@/types/chat";
 export type ChatState = {
   messages: ChatMessage[];
   isLoading: boolean;
+  sessionStarted: boolean;
 };
 
 export type ChatActions = {
@@ -14,11 +15,13 @@ export type ChatActions = {
   updateLastAssistantMessage: (text: string) => void;
   setLoading: (value: boolean) => void;
   clear: () => void;
+  setSessionStarted: (value: boolean) => void;
 };
 
 const initialState: ChatState = {
   messages: [],
   isLoading: false,
+  sessionStarted: false,
 };
 
 export const useChatStore = create<ChatState & ChatActions>((set) => ({
@@ -37,4 +40,5 @@ export const useChatStore = create<ChatState & ChatActions>((set) => ({
     }),
   setLoading: (value) => set({ isLoading: value }),
   clear: () => set({ ...initialState }),
+  setSessionStarted: (value) => set({ sessionStarted: value }),
 }));
