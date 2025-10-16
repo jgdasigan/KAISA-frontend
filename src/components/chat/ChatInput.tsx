@@ -37,7 +37,7 @@ export const ChatInput = ({ onSubmit, disabled }: ChatInputProps) => {
     >
       <textarea
         className="h-16 w-full resize-none rounded-2xl border border-transparent bg-white/85 px-3 py-2 text-sm text-kaisa-midnight outline-none transition focus:border-kaisa-blue/40 focus:bg-white"
-        placeholder="Ask KAISA anything..."
+        placeholder="Ask me anything..."
         value={message}
         onChange={(event) => setMessage(event.target.value)}
         disabled={isDisabled}

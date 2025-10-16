@@ -17,6 +17,13 @@ import {
 
 const agentMeta = AGENT_PROFILES_BY_TITLE;
 
+type ChatBubble = {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  agentId?: string;
+};
+
 export default function Home() {
   const { userDetails } = useAuthStore();
   const userName = userDetails?.given_name || userDetails?.family_name || "there";
@@ -24,14 +31,13 @@ export default function Home() {
   const { setSessionStarted, sessionStarted, clear } = useChatStore();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [hasSessionStarted, setHasSessionStarted] = useState(false);
-  const [messages, setMessages] = useState<
-    Array<{ id: number; role: "user" | "assistant"; content: string }>
-  >([
+  const [messages, setMessages] = useState<ChatBubble[]>([
     {
       id: 1,
       role: "assistant",
       content:
         "Hey there! 👋 I’m Teacher KAI, your guide for today. What are we exploring? Need help with a task, a concept, or just curious about something new?",
+      agentId: DEFAULT_AGENT.id,
     },
   ]);
 
@@ -46,13 +52,20 @@ export default function Home() {
     }
   };
 
-  const syncAssistantIntro = (agent: (typeof AGENT_PROFILES)[keyof typeof AGENT_PROFILES] | typeof DEFAULT_AGENT) => {
+  const syncAssistantIntro = (
+    agent: (typeof AGENT_PROFILES)[keyof typeof AGENT_PROFILES] | typeof DEFAULT_AGENT,
+  ) => {
     setMessages((prev) => {
       const next = [...prev];
       if (next.length === 0 || next[0]?.role !== "assistant") {
-        next.unshift({ id: Date.now(), role: "assistant", content: agent.content });
+        next.unshift({
+          id: Date.now(),
+          role: "assistant",
+          content: agent.content,
+          agentId: agent.id,
+        });
       } else {
-        next[0] = { ...next[0], content: agent.content };
+        next[0] = { ...next[0], content: agent.content, agentId: agent.id };
       }
       return next;
     });
@@ -96,7 +109,7 @@ export default function Home() {
       id: Date.now(),
       role: "user" as const,
       content: trimmed,
-    };
+    } satisfies ChatBubble;
 
     const assistantMeta =
       selectedAgentId && Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId)
@@ -112,6 +125,7 @@ export default function Home() {
         id: Date.now() + 1,
         role: "assistant" as const,
         content: "Sorry, I am having trouble processing your request.",
+        agentId: assistantMeta.id,
       },
     ]);
   };
@@ -138,6 +152,7 @@ export default function Home() {
             id: 1,
             role: "assistant",
             content: defaultAgent.content,
+            agentId: defaultAgent.id,
           },
         ]);
         setActiveAgent(defaultAgent);
@@ -177,7 +192,7 @@ export default function Home() {
                           alt={meta.displayName}
                           width={48}
                           height={48}
-                          className="h-12 w-12 rounded-full bg-white object-cover"
+                          className="h-12 w-12 rounded-full bg-kaisa-blue/12 object-cover"
                         />
                       )}
                       <div className="flex flex-col">
@@ -210,32 +225,48 @@ export default function Home() {
               sessionActive ? "h-[calc(100vh-5rem)]" : "h-64"
             }`}
           >
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={
-                  message.role === "user"
-                    ? "ml-auto flex max-w-[80%] justify-end"
-                    : "flex max-w-[80%]"
-                }
-              >
-                {message.role === "assistant" && (
-                  <div className="mr-3 mt-1 h-8 w-8 flex-shrink-0 rounded-full bg-kaisa-blue/20" />
-                )}
+            {messages.map((message) => {
+              const avatarAgent =
+                AGENT_PROFILES_BY_ID[message.agentId ?? ""] || DEFAULT_AGENT;
+              return (
                 <div
+                  key={message.id}
                   className={
                     message.role === "user"
-                      ? "rounded-2xl bg-kaisa-blue px-4 py-2 text-sm text-white shadow"
-                      : "rounded-2xl bg-kaisa-blue/10 px-4 py-2 text-sm text-kaisa-midnight/90"
+                      ? "ml-auto flex max-w-[80%] justify-end"
+                      : "flex max-w-[80%]"
                   }
                 >
-                  {message.content}
+                  {message.role === "assistant" && (
+                    <Image
+                      src={avatarAgent.icon}
+                      alt={avatarAgent.displayName}
+                      width={32}
+                      height={32}
+                      className="mr-3 mt-1 h-8 w-8 flex-shrink-0 rounded-full object-cover bg-kaisa-blue/20"
+                    />
+                  )}
+                  <div
+                    className={
+                      message.role === "user"
+                        ? "rounded-2xl bg-kaisa-blue px-4 py-2 text-sm text-white shadow"
+                        : "rounded-2xl bg-kaisa-blue/10 px-4 py-2 text-sm text-kaisa-midnight/90"
+                    }
+                  >
+                    {message.content}
+                  </div>
+                  {message.role === "user" && (
+                    <Image
+                    src="/images/sender-6.png"
+                    alt={avatarAgent.displayName}
+                    width={52}
+                    height={52}
+                    className="ml-3 mt-1 h-8 w-8 flex-shrink-0 rounded-full bg-kaisa-yellow/5"
+                    />
+                  )}
                 </div>
-                {message.role === "user" && (
-                  <div className="ml-3 mt-1 h-8 w-8 flex-shrink-0 rounded-full bg-kaisa-blue text-white" />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <ChatInput

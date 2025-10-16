@@ -53,9 +53,11 @@ export const Header = () => {
         >
           <Menu className="h-4 w-4" />
         </button>
-        <div className="fixed top-0 left-2 z-50 flex items-center gap-2 p-2">
-          <Image src="/kaisa-logo-1.png" alt="KAISA" width={52} height={52} />
-          <span className="text-lg font-semibold tracking-wide text-kaisa-blue">KAISA</span>
+        <div className="fixed -top-1 left-2 z-50 flex items-center gap-2 p-2">
+          <Image src="/kaisa-logo-1.png" alt="KAISA" width={62} height={62} />
+          <span className="text-lg font-bold tracking-wide text-kaisa-dark-blue">
+            K<span className="text-kaisa-blue">AI</span>SA
+          </span>
         </div>
       </div>
       <div className="relative hidden items-center gap-2 md:flex" ref={dropdownRef}>
