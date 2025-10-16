@@ -4,15 +4,23 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useAuthStore } from "@/stores/authStore";
 import { quickActionCards } from "@/assets";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAgentStore } from "@/stores/agentStore";
 import Image from "next/image";
 import { useChatStore } from "@/stores/chatStore";
+import {
+  AGENT_PROFILES,
+  AGENT_PROFILES_BY_ID,
+  AGENT_PROFILES_BY_TITLE,
+  DEFAULT_AGENT,
+} from "@/data/agents";
+
+const agentMeta = AGENT_PROFILES_BY_TITLE;
 
 export default function Home() {
   const { userDetails } = useAuthStore();
   const userName = userDetails?.given_name || userDetails?.family_name || "there";
-  const { setActiveAgent } = useAgentStore();
+  const { setActiveAgent, activeAgent } = useAgentStore();
   const { setSessionStarted, sessionStarted, clear } = useChatStore();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [hasSessionStarted, setHasSessionStarted] = useState(false);
@@ -27,34 +35,47 @@ export default function Home() {
     },
   ]);
 
-  const defaultAgent = {
-    id: "kaisa-default",
-    displayName: "Teacher KAI",
-    icon: "/images/kai.png",
-    content:
-      "Hey there! 👋 I’m Teacher KAI, your guide for today. What are we exploring? Need help with a task, a concept, or just curious about something new?",
+  const defaultAgent = DEFAULT_AGENT;
+
+  const agentProfiles = AGENT_PROFILES;
+
+  const ensureSessionStarted = () => {
+    if (!hasSessionStarted) {
+      setHasSessionStarted(true);
+      setSessionStarted(true);
+    }
   };
 
-  const agentMeta = {
-    "Curriculum Agent": {
-      id: "curriculum",
-      displayName: "Principal Aralyn",
-      icon: "/images/aralyn.png",
-      content: "Hello! I’m Principal Aralyn. ✨ Let’s make sure everything’s in order. What lesson, topic, or plan do you need help perfecting today?",
-    },
-    "Quizzer Agent": {
-      id: "quizzer",
-      displayName: "Tallya",
-      icon: "/images/tallya.png",
-      content: "Hi! I’m Tallya, your study buddy! 📝 Ready to tackle some questions or quiz yourself? Let’s get you acing this together—challenge accepted!",
-    },
-    "Review Agent": {
-      id: "review",
-      displayName: "Kuya Revi",
-      icon: "/images/revi.png",
-      content: "Hey! Kuya Revi here. 😎 Don’t worry, we’ll go step by step. What are we reviewing today? I’ll guide you and maybe throw in a joke or two while we learn!",
-    },
-  } as const;
+  const syncAssistantIntro = (agent: (typeof AGENT_PROFILES)[keyof typeof AGENT_PROFILES] | typeof DEFAULT_AGENT) => {
+    setMessages((prev) => {
+      const next = [...prev];
+      if (next.length === 0 || next[0]?.role !== "assistant") {
+        next.unshift({ id: Date.now(), role: "assistant", content: agent.content });
+      } else {
+        next[0] = { ...next[0], content: agent.content };
+      }
+      return next;
+    });
+  };
+
+  const applyAgentSelection = (agent: typeof DEFAULT_AGENT | (typeof AGENT_PROFILES)[keyof typeof AGENT_PROFILES]) => {
+    if (agent.id !== DEFAULT_AGENT.id) {
+      ensureSessionStarted();
+      setSelectedAgentId(agent.id);
+    } else {
+      setSelectedAgentId(null);
+    }
+    syncAssistantIntro(agent);
+  };
+
+  const previousAgentIdRef = useRef<string | undefined>();
+
+  useEffect(() => {
+    if (!activeAgent) return;
+    if (previousAgentIdRef.current === activeAgent.id) return;
+    previousAgentIdRef.current = activeAgent.id;
+    applyAgentSelection(activeAgent);
+  }, [activeAgent]);
 
   const propagateMessages = (nextMessages: typeof messages) => {
     setMessages(nextMessages);
@@ -64,26 +85,11 @@ export default function Home() {
     const trimmed = message.trim();
     if (!trimmed) return;
 
-    if (!hasSessionStarted) {
-      setHasSessionStarted(true);
-      setSessionStarted(true);
-    }
+    ensureSessionStarted();
 
     if (!selectedAgentId) {
       setActiveAgent(defaultAgent);
-      setMessages((prev) => {
-        const next = [...prev];
-        if (next.length === 0 || next[0]?.role !== "assistant") {
-          next.unshift({
-            id: Date.now(),
-            role: "assistant",
-            content: defaultAgent.content,
-          });
-        } else {
-          next[0] = { ...next[0], content: defaultAgent.content };
-        }
-        return next;
-      });
+      applyAgentSelection(defaultAgent);
     }
 
     const userEntry = {
@@ -93,11 +99,11 @@ export default function Home() {
     };
 
     const assistantMeta =
-      selectedAgentId && Object.values(agentMeta).find((meta) => meta.id === selectedAgentId)
-        ? (Object.values(agentMeta).find((meta) => meta.id === selectedAgentId) as (typeof agentMeta)[keyof typeof agentMeta])
+      selectedAgentId && Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId)
+        ? (Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId) as (typeof agentProfiles)[keyof typeof agentProfiles])
         : defaultAgent;
 
-    setActiveAgent((prev) => prev || assistantMeta);
+    setActiveAgent(assistantMeta);
 
     propagateMessages([
       ...messages,
@@ -113,21 +119,7 @@ export default function Home() {
   const handleAgentSelect = (title: string) => {
     const meta = agentMeta[title as keyof typeof agentMeta];
     if (!meta) return;
-    setSelectedAgentId(meta.id);
     setActiveAgent(meta);
-    if (!hasSessionStarted) {
-      setHasSessionStarted(true);
-      setSessionStarted(true);
-    }
-    setMessages((prev) => {
-      const next = [...prev];
-      if (next.length === 0 || next[0].role !== "assistant") {
-        next.unshift({ id: Date.now(), role: "assistant", content: meta.content });
-      } else {
-        next[0] = { ...next[0], content: meta.content };
-      }
-      return next;
-    });
   };
 
   const sessionActive = hasSessionStarted || sessionStarted;
@@ -176,7 +168,7 @@ export default function Home() {
                     key={card.title}
                     type="button"
                     onClick={() => handleAgentSelect(card.title)}
-                    className="group flex h-full flex-col gap-3 rounded-2xl border border-white/20 bg-white/70 p-5 text-left transition hover:border-kaisa-blue/40 hover:bg-white"
+                    className="group flex h-full flex-col gap-3 rounded-2xl border border-white/20 bg-white/70 p-5 text-left shadow transition-transform duration-300 hover:-translate-y-1 hover:border-kaisa-yellow/70 hover:bg-white/75 hover:shadow-[0_12px_28px_-18px_rgba(249,200,14,0.45)]"
                   >
                     <div className="flex items-center gap-3">
                       {meta && (
@@ -191,7 +183,7 @@ export default function Home() {
                       <div className="flex flex-col">
                         <p className="text-sm font-semibold text-kaisa-midnight">{card.title}</p>
                         {meta && (
-                          <p className="text-xs text-kaisa-midnight/70">Persona: {meta.displayName}</p>
+                          <p className="text-xs text-kaisa-midnight/70">{meta.displayName}</p>
                         )}
                       </div>
                     </div>
