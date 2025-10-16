@@ -15,9 +15,9 @@ export const AppShell = ({ children, onNewChat }: AppShellProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   return (
-    <div className="relative flex min-h-screen flex-col bg-transparent">
+    <div className="relative flex h-screen flex-col bg-transparent">
       <Header />
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar
           onSelectNewChat={onNewChat}
           onSelectChats={() => setShowHistory((prev) => !prev)}
@@ -28,7 +28,8 @@ export const AppShell = ({ children, onNewChat }: AppShellProps) => {
             <ChatHistoryPanel />
           </div>
         )}
-        <main className="flex-1 overflow-y-auto bg-transparent px-6 py-10 md:px-10">
+        <main className="flex-1 overflow-hidden bg-transparent px-3 py-4 md:px-6 md:py-6">
+          {/* Alternative approach: wrap children in CSS Grid and set chat area as auto rows to avoid nested scrolling */}
           {children}
         </main>
       </div>

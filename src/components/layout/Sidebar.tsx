@@ -8,7 +8,7 @@ import { cn } from "@/utils/cn";
 const navItems = [
   { icon: Disc, label: "New chat", key: "workspace" },
   { icon: MessageCircle, label: "Chat history", key: "chats" },
-  { icon: Info, label: "Info", key: "info" },
+  { icon: Info, label: "About Us", key: "info" },
 ];
 
 type SidebarProps = {
@@ -22,7 +22,7 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
   const authStore = useAuthStore();
 
   return (
-    <aside className="group hidden w-24 flex-shrink-0 flex-col border-r border-white/10 bg-white/30 py-6 backdrop-blur-xl transition-all duration-200 hover:w-56 lg:flex">
+    <aside className="group hidden w-24 flex-shrink-0 flex-col border-r border-white/10 bg-white/30 py-4 backdrop-blur-xl transition-all duration-200 hover:w-56 lg:flex">
       <div className="flex flex-1 flex-col gap-6 px-4">
         <nav className="mt-2 flex flex-1 flex-col gap-2 text-kaisa-midnight/70">
           {navItems.map(({ icon: Icon, label, key }) => {

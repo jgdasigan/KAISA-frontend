@@ -54,8 +54,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 
           {page === "about" && (
             <div className="max-w-2xl">
-              <h2 className="text-2xl font-bold text-kaisa-blue">About Us</h2>
-              <h3 className="mt-1 text-lg font-semibold text-kaisa-midnight">
+              <h3 className="mt-1 text-lg font-semibold text-kaisa-blue">
                 Welcome to KAISA, your K–12 Artificial Intelligence Smart Agent
               </h3>
               <p className="mt-2 text-sm italic text-kaisa-midnight/80">

@@ -32,10 +32,11 @@ export const ChatInput = ({ onSubmit, disabled }: ChatInputProps) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative flex flex-col gap-4 rounded-3xl border border-white/20 bg-white/65 p-3 shadow-[0_18px_48px_-28px_rgba(12,76,179,0.3)] backdrop-blur-xl"
+      className="relative flex flex-col gap-3 rounded-3xl border border-white/20 bg-white/65 p-2 shadow-[0_12px_36px_-24px_rgba(12,76,179,0.28)] backdrop-blur-xl"
+      style={{ marginBottom: "4px" }}
     >
       <textarea
-        className="h-20 w-full resize-none rounded-2xl border border-transparent bg-white/85 px-4 py-3 text-sm text-kaisa-midnight outline-none transition focus:border-kaisa-blue/40 focus:bg-white"
+        className="h-16 w-full resize-none rounded-2xl border border-transparent bg-white/85 px-3 py-2 text-sm text-kaisa-midnight outline-none transition focus:border-kaisa-blue/40 focus:bg-white"
         placeholder="Ask KAISA anything..."
         value={message}
         onChange={(event) => setMessage(event.target.value)}
@@ -44,7 +45,7 @@ export const ChatInput = ({ onSubmit, disabled }: ChatInputProps) => {
       <div className="flex items-center justify-between gap-3">
         <label
           className={cn(
-            "flex cursor-pointer items-center gap-2 rounded-full bg-white/60 px-4 py-2 text-xs font-medium text-kaisa-midnight",
+            "flex cursor-pointer items-center gap-2 rounded-full bg-white/60 px-3 py-1.5 text-xs font-medium text-kaisa-midnight",
             isDisabled && "pointer-events-none opacity-60"
           )}
         >
