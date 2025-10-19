@@ -9,14 +9,15 @@ import { AboutModal } from "@/components/modals/AboutModal";
 type AppShellProps = {
   children: ReactNode;
   onNewChat?: () => void;
+  showAgentDropdown?: boolean;
 };
 
-export const AppShell = ({ children, onNewChat }: AppShellProps) => {
+export const AppShell = ({ children, onNewChat, showAgentDropdown = true }: AppShellProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   return (
-    <div className="relative flex h-screen flex-col bg-transparent">
-      <Header />
+    <div className="relative flex h-screen flex-col bg-gradient-to-br from-[#f7f9ff] via-[#f1f6ff] to-[#e9efff]">
+      <Header showAgentDropdown={showAgentDropdown} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           onSelectNewChat={onNewChat}
@@ -24,12 +25,12 @@ export const AppShell = ({ children, onNewChat }: AppShellProps) => {
           onSelectInfo={() => setShowAbout(true)}
         />
         {showHistory && (
-          <div className="hidden w-full max-w-sm border-r border-white/10 bg-white/40 px-4 py-6 backdrop-blur lg:block">
+          <div className="hidden w-full max-w-sm border-r border-white/10 bg-white/60 px-5 py-6 shadow-lg backdrop-blur lg:block">
             <ChatHistoryPanel />
           </div>
         )}
-        <main className="flex-1 overflow-hidden bg-transparent px-3 py-4 md:px-6 md:py-6">
-          {/* Alternative approach: wrap children in CSS Grid and set chat area as auto rows to avoid nested scrolling */}
+        <main className="flex-1 overflow-hidden px-4 py-6 md:px-8">
+          {/* Reshape the workspace container so children can define multi-column layouts similar to the new reference */}
           {children}
         </main>
       </div>

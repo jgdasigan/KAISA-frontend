@@ -1,13 +1,13 @@
 "use client";
 
-import { MessageCircle, Info, Disc, LogOut } from "lucide-react";
+import { History, Info, MessageSquare, LogOut, PanelLeftOpen, PanelRight, User } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/utils/cn";
 
 const navItems = [
-  { icon: Disc, label: "New chat", key: "workspace" },
-  { icon: MessageCircle, label: "Chat history", key: "chats" },
+  { icon: MessageSquare, label: "New chat", key: "workspace" },
+  { icon: History, label: "Chat history", key: "chats" },
   { icon: Info, label: "About Us", key: "info" },
 ];
 
@@ -19,12 +19,29 @@ type SidebarProps = {
 
 export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: SidebarProps) => {
   const [active, setActive] = useState<string>("workspace");
+  const [collapsed, setCollapsed] = useState(false);
   const authStore = useAuthStore();
 
   return (
-    <aside className="group hidden w-24 flex-shrink-0 flex-col border-r border-white/10 bg-white/30 py-4 backdrop-blur-xl transition-all duration-200 hover:w-56 lg:flex">
-      <div className="flex flex-1 flex-col gap-6 px-4">
-        <nav className="mt-2 flex flex-1 flex-col gap-2 text-kaisa-midnight/70">
+    <aside
+      className={cn(
+        "hidden h-full flex-shrink-0 flex-col border-r border-white/25 bg-white/90 py-6 shadow-[12px_0_42px_-28px_rgba(37,56,88,0.4)] backdrop-blur-lg lg:flex",
+        collapsed ? "w-20 px-3" : "w-64 px-5",
+        "transition-[width,padding] duration-300",
+      )}
+    >
+      <div className="flex items-center pb-4 text-kaisa-midnight ml-2">
+        <button
+          type="button"
+          onClick={() => setCollapsed((prev) => !prev)}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white text-kaisa-blue shadow-sm"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <PanelLeftOpen className="h-4 w-4 text-kaisa-blue" /> : <PanelRight className="h-4 w-4 text-kaisa-blue" />}
+        </button>
+      </div>
+      <div className="flex flex-1 flex-col gap-8">
+        <nav className="flex flex-col gap-2 text-kaisa-midnight/80 transition-all duration-300">
           {navItems.map(({ icon: Icon, label, key }) => {
             const isActive = active === key;
             return (
@@ -32,10 +49,9 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
                 key={label}
                 type="button"
                 className={cn(
-                  "group/item flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition-all duration-200",
-                  "bg-white/60 text-kaisa-blue shadow-sm backdrop-blur",
-                  !isActive && "hover:bg-kaisa-yellow/75 hover:text-kaisa-midnight",
-                  isActive && "border border-kaisa-blue/40 bg-kaisa-blue/15 text-kaisa-blue shadow-[0_8px_22px_-12px_rgba(12,76,179,0.45)]"
+                  "flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition",
+                  "hover:bg-kaisa-blue/10 hover:text-kaisa-midnight",
+                  isActive && "text-kaisa-blue"
                 )}
                 onClick={() => {
                   setActive(key);
@@ -50,43 +66,43 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
                   }
                 }}
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-kaisa-blue shadow-inner">
-                  <Icon className="h-5 w-5" />
-                </span>
                 <span
                   className={cn(
-                    "hidden flex-1 truncate text-left text-xs font-medium text-kaisa-midnight/80 transition lg:hidden",
-                    "group-hover:flex",
-                    isActive && "text-kaisa-blue"
+                    "flex h-9 w-9 items-center justify-center rounded-xl border border-white/80 bg-white text-kaisa-blue",
+                    isActive && "border-kaisa-blue/40"
                   )}
                 >
-                  {label}
+                  <Icon className="h-4 w-4" aria-hidden />
                 </span>
+                {!collapsed && <span className="truncate">{label}</span>}
               </button>
             );
           })}
         </nav>
       </div>
-      <div className="flex flex-col gap-2 px-4 text-xs text-kaisa-midnight/70">
-        <div className="group/profile flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 shadow-sm transition-all duration-200">
-          <div className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-full bg-kaisa-yellow text-kaisa-midnight font-semibold">
-            {authStore.userDetails?.given_name?.[0] || "K"}
+      <div className="flex flex-col gap-3 text-xs text-kaisa-midnight/70">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white px-3 py-3 shadow-sm transition">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-kaisa-yellow/70 font-semibold text-kaisa-midnight">
+            {authStore.userDetails?.given_name?.[0] || <User className="h-5 w-5" />}
           </div>
-          <div className="min-w-0 flex-1 flex-col text-left text-xs hidden group-hover/profile:flex lg:flex">
-            <span className="truncate text-sm font-semibold text-kaisa-midnight">
+          <div className={cn("min-w-0 flex-1 transition-all", collapsed && "hidden")}> 
+            <span className="block truncate text-sm font-semibold text-kaisa-midnight">
               {authStore.userDetails?.given_name || "KAISA User"}
             </span>
-            <span className="truncate text-[11px] text-kaisa-midnight/70">
+            <span className="block truncate text-[11px] text-kaisa-midnight/60">
               {authStore.userDetails?.email || "user@kaisa.ai"}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => authStore.clearSession()}
-            className="hidden h-8 w-8 items-center justify-center rounded-full bg-kaisa-red/85 text-white shadow-sm transition hover:bg-kaisa-red group-hover/profile:inline-flex"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={() => authStore.clearSession()}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-kaisa-red/90 text-white transition hover:bg-kaisa-red"
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+            </button>
+          )}
         </div>
       </div>
     </aside>
