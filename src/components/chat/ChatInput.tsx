@@ -50,7 +50,7 @@ export const ChatInput = ({ onSubmit, disabled }: ChatInputProps) => {
           )}
         >
           <Paperclip className="h-4 w-4" />
-          Attach
+          Attach a document
           <input
             type="file"
             className="hidden"
@@ -65,7 +65,7 @@ export const ChatInput = ({ onSubmit, disabled }: ChatInputProps) => {
         </label>
         <button
           type="submit"
-          className="inline-flex items-center gap-2 rounded-full bg-kaisa-blue px-5 py-2 text-sm font-medium text-white transition hover:bg-kaisa-blue/90 disabled:opacity-70"
+          className="inline-flex items-center gap-2 rounded-full bg-kaisa-blue px-5 py-2 text-sm font-medium text-white transition hover:bg-kaisa-blue/90 disabled:opacity-40"
           disabled={disabled || isUploading || !message.trim()}
         >
           <SendHorizontal className="h-4 w-4" />

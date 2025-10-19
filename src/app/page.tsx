@@ -315,8 +315,8 @@ export default function Home() {
                     <div
                       className={`rounded-3xl px-4 py-3 shadow-[0_18px_32px_-24px_rgba(37,56,88,0.35)] ${
                         isUser
-                          ? "bg-gradient-to-br from-kaisa-blue to-kaisa-dark-blue text-white"
-                          : "bg-white text-kaisa-midnight/90"
+                          ? "bg-kaisa-blue/80 text-white/90"
+                          : "bg-kaisa-blue/10 text-kaisa-midnight/90"
                       }`}
                     >
                       {message.content}
@@ -327,7 +327,7 @@ export default function Home() {
                         alt="You"
                         width={40}
                         height={40}
-                        className="h-10 w-10 rounded-2xl border border-white/60 bg-kaisa-yellow/10 object-cover"
+                        className="h-10 w-10 rounded-2xl border border-white/20 bg-kaisa-yellow/10 object-cover"
                       />
                     )}
                   </div>
