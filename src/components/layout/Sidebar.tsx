@@ -25,7 +25,7 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
   return (
     <aside
       className={cn(
-        "hidden h-full flex-shrink-0 flex-col border-r border-white/25 bg-white/90 py-6 shadow-[12px_0_42px_-28px_rgba(37,56,88,0.4)] backdrop-blur-lg lg:flex",
+        "hidden h-full flex-shrink-0 flex-col border-r border-white/25 bg-white/40 py-6 shadow-[12px_0_42px_-28px_rgba(37,56,88,0.4)] backdrop-blur-lg lg:flex",
         collapsed ? "w-20 px-3" : "w-64 px-5",
         "transition-[width,padding] duration-300",
       )}
@@ -68,7 +68,7 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
               >
                 <span
                   className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-xl border border-white/80 bg-white text-kaisa-blue",
+                    "flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-kaisa-blue",
                     isActive && "border-kaisa-blue/40"
                   )}
                 >
@@ -81,7 +81,7 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
         </nav>
       </div>
       <div className="flex flex-col gap-3 text-xs text-kaisa-midnight/70">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white px-3 py-3 shadow-sm transition">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 shadow-sm transition">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-kaisa-yellow/70 font-semibold text-kaisa-midnight">
             {authStore.userDetails?.given_name?.[0] || <User className="h-5 w-5" />}
           </div>

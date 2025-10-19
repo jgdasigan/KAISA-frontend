@@ -99,18 +99,33 @@ export default function Home() {
       : options?.useLandingMessage ?? (!hasSessionStarted && agent.id === DEFAULT_AGENT.id);
 
     if (shouldShowLanding) {
-      syncAssistantIntro(agent, LANDING_KAI_MESSAGE);
       setHasSessionStarted(false);
       setSessionStarted(false);
       setSelectedAgentId(null);
       setIsChatVisible(false);
+      setMessages([
+        {
+          id: Date.now(),
+          role: "assistant",
+          content: LANDING_KAI_MESSAGE,
+          agentId: agent.id,
+        },
+      ]);
       return;
     }
 
-    ensureSessionStarted();
+    setHasSessionStarted(true);
+    setSessionStarted(true);
     setIsChatVisible(true);
     setSelectedAgentId(agent.id);
-    syncAssistantIntro(agent);
+    setMessages([
+      {
+        id: Date.now(),
+        role: "assistant",
+        content: agent.content,
+        agentId: agent.id,
+      },
+    ]);
   };
 
   useEffect(() => {
@@ -219,7 +234,7 @@ export default function Home() {
                       className="h-16 w-16 rounded-2xl border border-white/60 bg-kaisa-blue/10 object-cover"
                     />
                       <div className="flex flex-col gap-2">
-                        <p className="rounded-2xl bg-kaisa-blue/10 px-5 py-3 text-sm text-kaisa-midnight/80">
+                      <p className="rounded-2xl bg-kaisa-blue/10 px-5 py-3 text-sm text-kaisa-midnight/80">
                         I’m Teacher KAI, here to guide you today. Ask me your questions, or choose your guide—Aralyn for lesson guidance, Tallya for quizzes, or Revi for step-by-step review tips. Let’s get learning!
                       </p>
                     </div>
@@ -244,7 +259,7 @@ export default function Home() {
                         key={agent.id}
                         type="button"
                         onClick={() => handleAgentSelect(agent.title)}
-                        className="flex items-center justify-between gap-3 rounded-2xl border border-transparent bg-white px-3 py-2.5 text-left text-sm transition hover:-translate-y-0.5 hover:border-kaisa-purple/30 hover:bg-kaisa-purple/10"
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-transparent bg-white px-3 py-2.5 text-left text-sm transition hover:-translate-y-0.5 hover:border-kaisa-yellow/30 hover:bg-kaisa-yellow/10"
                       >
                         <span className="flex items-center gap-3">
                           <Image

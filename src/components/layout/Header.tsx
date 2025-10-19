@@ -47,7 +47,7 @@ export const Header = ({ showAgentDropdown = true }: HeaderProps) => {
   };
 
   return (
-    <header className="relative z-[80] flex items-center justify-between gap-4 border-b border-white/30 bg-white/70 px-6 py-4 shadow-[0_16px_40px_-32px_rgba(37,56,88,0.6)] backdrop-blur-xl md:px-10">
+    <header className="relative z-[80] flex items-center justify-between gap-4 border-b border-white/0 bg-white/40 px-6 py-1 shadow-[0_16px_40px_-32px_rgba(37,56,88,0.6)] backdrop-blur-xl md:px-10">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -66,14 +66,14 @@ export const Header = ({ showAgentDropdown = true }: HeaderProps) => {
       </div>
       <div className="flex flex-1 items-center justify-end gap-4">
         {showAgentDropdown && (
-          <div className="hidden items-center gap-2 rounded-full bg-white/80 px-3 py-2 shadow-inner md:flex">
+          <div className="hidden items-center gap-2 rounded-full bg-white/10 px-4 py-2 shadow-inner md:flex">
             <span className="text-xs font-semibold uppercase tracking-wide text-kaisa-midnight/60">
               Active Agent
             </span>
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium text-kaisa-midnight shadow-[0_10px_24px_-20px_rgba(37,56,88,0.55)] outline-none transition hover:bg-kaisa-blue/10"
+                className="inline-flex items-center gap-2 rounded-full bg-kaisa-red/4 px-3 py-2 text-sm font-medium text-kaisa-midnight shadow-[0_10px_24px_-20px_rgba(37,56,88,0.55)] outline-none transition hover:bg-kaisa-red/10"
                 onClick={() => setIsOpen((prev) => !prev)}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
@@ -137,7 +137,7 @@ export const Header = ({ showAgentDropdown = true }: HeaderProps) => {
             </div>
           </div>
         )}
-        <div className="hidden items-center gap-4 rounded-3xl bg-white px-4 py-3 text-sm text-kaisa-midnight shadow-[0_10px_38px_-24px_rgba(37,56,88,0.45)] md:flex">
+        <div className="hidden items-center gap-2 rounded-4xl bg-kaisa-red/4 px-3 py-3 text-sm text-kaisa-midnight shadow-[0_10px_38px_-24px_rgba(37,56,88,0.45)] md:flex">
           <div className="flex flex-col">
             <span>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}</span>
           </div>

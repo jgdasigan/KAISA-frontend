@@ -16,7 +16,7 @@ export const AppShell = ({ children, onNewChat, showAgentDropdown = true }: AppS
   const [showHistory, setShowHistory] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   return (
-    <div className="relative flex h-screen flex-col bg-gradient-to-br from-[#f7f9ff] via-[#f1f6ff] to-[#e9efff]">
+    <div className="relative flex h-screen flex-col bg-transparent">
       <Header showAgentDropdown={showAgentDropdown} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
