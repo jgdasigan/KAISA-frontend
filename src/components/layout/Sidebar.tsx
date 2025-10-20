@@ -82,7 +82,7 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
       </div>
       <div className="flex flex-col gap-3 text-xs text-kaisa-midnight/70">
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 shadow-sm transition">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-kaisa-yellow/70 font-semibold text-kaisa-midnight">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl font-semibold text-kaisa-blue">
             {authStore.userDetails?.given_name?.[0] || <User className="h-5 w-5" />}
           </div>
           <div className={cn("min-w-0 flex-1 transition-all", collapsed && "hidden")}> 

@@ -20,8 +20,8 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "KAISA",
-  description: "Your K-12 Artificial Intelligence Smart Agent",
-};
+  description: "KAISA | Your K-12 Artificial Intelligence Smart Agent",
+}
 
 export default function RootLayout({
   children,

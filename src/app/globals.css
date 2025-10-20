@@ -13,7 +13,7 @@
   --foreground: #0f172a;
   --glass: rgba(10, 17, 38, 0.55);
   /* Controls how much of the blur artwork shows through. Lower = more white. */
-  --kaisa-bg-overlay: 0.57;
+  --kaisa-bg-overlay: 0.5;
 }
 
 @theme inline {
