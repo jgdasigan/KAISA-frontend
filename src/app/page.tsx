@@ -54,10 +54,10 @@ type ChatBubble = {
 };
 
 const LoadingDots = () => (
-  <span className="flex items-center gap-1">
-    <span className="h-2.5 w-2.5 rounded-full bg-current opacity-80 animate-bounce" style={{ animationDelay: "-0.24s" }} />
-    <span className="h-2.5 w-2.5 rounded-full bg-current opacity-80 animate-bounce" style={{ animationDelay: "-0.12s" }} />
-    <span className="h-2.5 w-2.5 rounded-full bg-current opacity-80 animate-bounce" />
+  <span className="flex items-center gap-0.5">
+    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80 animate-bounce" style={{ animationDelay: "-0.24s" }} />
+    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80 animate-bounce" style={{ animationDelay: "-0.12s" }} />
+    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80 animate-bounce" />
   </span>
 );
 

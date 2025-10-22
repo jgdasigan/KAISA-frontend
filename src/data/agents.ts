@@ -1,5 +1,5 @@
 export const DEFAULT_AGENT = {
-  id: "kaisa-default",
+  id: "general",
   title: "Teacher KAI",
   displayName: "Teacher KAI",
   icon: "/images/kai.png",
@@ -28,7 +28,7 @@ export const AGENT_PROFILES = {
     tagline: "Assessments & practice drills",
   },
   review: {
-    id: "review",
+    id: "reviewer",
     title: "Review Agent",
     displayName: "Kuya Revi",
     icon: "/images/revi.png",
