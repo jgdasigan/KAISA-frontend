@@ -85,6 +85,7 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(sessionId);
   const assistantResponseBufferRef = useRef<string>("");
+  const assistantChunksRef = useRef<string[]>([]);
   const isStreamingRef = useRef(false);
   const lastMessageIdRef = useRef<number>(messages[messages.length - 1]?.id ?? Date.now());
 
@@ -257,30 +258,45 @@ export default function Home() {
         }
         return;
       }
-      // Handle streaming protocol: message_status + agent_response
-      if ("message_status" in data) {
-        const status = (data as { message_status?: string }).message_status;
-        const chunk = (data as { agent_response?: string }).agent_response || "";
+      // Handle streaming protocols: either message_status or type with values
+      const status = (data as { message_status?: string; type?: string }).message_status ||
+                     (data as { type?: string }).type;
+      const chunk = (data as { agent_response?: string; data?: string }).agent_response ||
+                    (data as { data?: string }).data || "";
+      if (status === "start_of_message") {
         if (!sessionIdRef.current && typeof incomingSessionId === "string") {
           setSessionId(incomingSessionId);
           sessionIdRef.current = incomingSessionId;
         }
-        if (status === "start_of_message") {
-          assistantResponseBufferRef.current = "";
-          lastMessageIdRef.current = createMessageId();
-          upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: "" });
-          return;
-        }
-        if (status === "in_progress") {
-          assistantResponseBufferRef.current += chunk;
-          upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: assistantResponseBufferRef.current });
-          return;
-        }
-        if (status === "end_of_message") {
-          const finalContent = assistantResponseBufferRef.current || chunk;
-          upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: finalContent, isFinal: true });
-          return;
-        }
+        // Reset buffer; rely on the existing placeholder created on send
+        assistantResponseBufferRef.current = "";
+        isStreamingRef.current = true;
+        return;
+      }
+      if (status === "in_progress") {
+        if (chunk) assistantChunksRef.current.push(chunk);
+        upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: assistantChunksRef.current.join("") });
+        return;
+      }
+      if (status === "end_of_message") {
+        if (chunk) assistantChunksRef.current.push(chunk);
+        const finalContent = assistantChunksRef.current.join("");
+        // Ensure we persist the last content; do not clear the buffer immediately
+        upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: finalContent, isFinal: true });
+        isStreamingRef.current = false;
+        return;
+      }
+      // Backward compatibility: { type: 'chunk' | 'done' } with field 'data'
+      if ((data as { type?: string }).type === "chunk") {
+        if (chunk) assistantChunksRef.current.push(chunk);
+        upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: assistantChunksRef.current.join("") });
+        return;
+      }
+      if ((data as { type?: string }).type === "done") {
+        const finalContent = assistantChunksRef.current.join("");
+        upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: finalContent, isFinal: true });
+        isStreamingRef.current = false;
+        return;
       }
       if ("error" in data && data.error) {
         upsertAssistantBubble({
