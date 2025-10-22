@@ -63,6 +63,7 @@ export type WebSocketActions = {
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 3000;
 const HEARTBEAT_INTERVAL = 25000;
+const HEARTBEAT_ENABLED = (process.env.NEXT_PUBLIC_WS_HEARTBEAT || "false") === "true";
 const DEFAULT_WEBSOCKET_URL = "wss://mq1tkjuvm0.execute-api.us-east-1.amazonaws.com/production";
 
 let reconnectAttempts = 0;
@@ -214,6 +215,7 @@ function flushQueue() {
 
 function startHeartbeat() {
   stopHeartbeat();
+  if (!HEARTBEAT_ENABLED) return;
   heartbeatTimer = setInterval(() => {
     const { socket } = useWsStore.getState();
     if (socket && socket.readyState === WebSocket.OPEN) {

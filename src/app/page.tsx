@@ -63,7 +63,7 @@ const LoadingDots = () => (
 
 export default function Home() {
   const { userDetails } = useAuthStore();
-  const userName = userDetails?.given_name || userDetails?.family_name || "User";
+  const userName = userDetails?.given_name || userDetails?.family_name;
   const { setActiveAgent, activeAgent } = useAgentStore();
   const { connect, send, addSessionListener, removeSessionListener, addGlobalListener, removeGlobalListener, isConnected } = useWsStore();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -349,7 +349,7 @@ export default function Home() {
     const now = new Date().toISOString().slice(0, 19).replace("T", " ");
     const payload = sessionIdRef.current
       ? {
-          action: "chatExisting",
+          action: "existingChat",
           session_id: sessionIdRef.current,
           agent: assistantMeta.id,
           user_input: trimmed,
@@ -414,7 +414,7 @@ export default function Home() {
             <div className="pt-15 text-center">
               <h1 className="text-xl font-bold sm:text-2xl md:text-2xl">
                 <span className="text-kaisa-blue/80">{greetingLabel}, </span>
-                <span className="text-kaisa-blue/80">{userName}. 👋</span>
+                <span className="text-kaisa-blue/80">{userName}.👋</span>
               </h1>
             </div>
 
