@@ -1,13 +1,13 @@
 "use client";
 
-import { History, Info, MessageSquare, PanelLeftOpen, PanelRight, User } from "lucide-react";
+import { Info, MessageSquare, PanelLeftOpen, PanelRight, User } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/utils/cn";
 
 const navItems = [
   { icon: MessageSquare, label: "New chat", key: "workspace" },
-  // { icon: History, label: "Chat history", key: "chats" },
+  // history button optional
   { icon: Info, label: "About Us", key: "info" },
 ];
 

@@ -29,11 +29,11 @@ export const AppShell = ({ children, onNewChat, showAgentDropdown = true }: AppS
         const lastId = typeof localStorage !== "undefined" ? localStorage.getItem("kaisa_last_session_id") : null;
         if (isConnected && lastId) {
           const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-          void send({ action: "existingChat", session_id: lastId, user_input: "", user_id: "demo-user", last_msg_timestamp: now } as Record<string, unknown>);
+          void send({ action: "existingChat", session_id: lastId, user_input: "", user_id: "demo-user", last_msg_timestamp: now });
           setTimeout(() => {
             try {
               const latest = localStorage.getItem("kaisa_last_history");
-              setHistoryItems(latest ? (JSON.parse(latest) as any[]) : []);
+              setHistoryItems(latest ? (JSON.parse(latest) as HistoryItem[]) : []);
             } catch {}
           }, 700);
         }
