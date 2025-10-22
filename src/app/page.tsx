@@ -192,6 +192,13 @@ export default function Home() {
     previousAgentIdRef.current = activeAgent.id;
     pendingOptionsRef.current = null;
 
+    // If a chat session is already active, just switch the agent for subsequent messages
+    // and keep the existing session/messages intact.
+    if (hasSessionStarted) {
+      setSelectedAgentId(activeAgent.id);
+      return;
+    }
+
     const shouldUseLandingCopy = pendingOptions?.forceChatVisible
       ? false
       : pendingOptions?.useLandingMessage ?? (!hasSessionStarted && activeAgent.id === DEFAULT_AGENT.id);
