@@ -51,6 +51,13 @@ type ChatBubble = {
   content: string;
   agentId?: string;
   isStreaming?: boolean;
+  isAttachment?: boolean;
+  isUploading?: boolean;
+  attachment?: {
+    fileName: string;
+    fileType: string;
+    s3Key?: string;
+  };
 };
 
 const LoadingDots = () => (
@@ -341,6 +348,9 @@ export default function Home() {
     return undefined;
   }, [addGlobalListener, removeGlobalListener, handleWsMessage, sessionId]);
 
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isFileUploading, setIsFileUploading] = useState(false);
+
   const handleSendMessage = async (message: string, file?: File | null) => {
     const trimmed = message.trim();
     if (!trimmed) return;
@@ -383,9 +393,76 @@ export default function Home() {
 
     propagateMessages(nextMessages);
 
+    // Optional: show uploading indicator if a PDF is attached
+    let s3Key: string | undefined;
+    if ((window as any).__kaisaUploadedKey) {
+      s3Key = (window as any).__kaisaUploadedKey as string;
+    } else if (file && file.type === "application/pdf") {
+      setIsFileUploading(true);
+      setUploadProgress(0);
+      try {
+        const key = `${crypto.randomUUID()}.pdf`;
+        const uploadUrl = `https://kaisa-temp-bucket.s3.amazonaws.com/public/${key}`;
+
+        // Use XHR to capture upload progress
+        s3Key = await new Promise<string>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", uploadUrl, true);
+          xhr.setRequestHeader("Content-Type", "application/pdf");
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.round((e.loaded / e.total) * 100);
+              setUploadProgress(pct);
+            }
+          };
+          xhr.onerror = () => reject(new Error("XHR upload error"));
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(key);
+            } else {
+              reject(new Error(`upload failed: ${xhr.status}`));
+            }
+          };
+          xhr.send(file);
+        });
+      } catch (err) {
+        console.error("# upload failed", err);
+        // Prevent sending the payload if upload fails
+        setIsFileUploading(false);
+        setUploadProgress(null);
+        throw err instanceof Error ? err : new Error("Upload failed");
+      } finally {
+        setIsFileUploading(false);
+        setUploadProgress(null);
+      }
+    }
+
+    // If a file was provided but no uploaded key was produced, do not send the payload
+    if (((file && file.type === "application/pdf") || (window as any).__kaisaUploadedName) && !s3Key) {
+      throw new Error("Upload did not complete");
+    }
+
     // Build WebSocket payloads matching backend contract
     const baseUserId = userDetails?.id || "demo-user";
     const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+    // If we have an uploaded file, show the attachment chip in the thread now (after Send)
+    if (s3Key && file) {
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === lastMessageIdRef.current);
+        const attachmentBubble: ChatBubble = {
+          id: createMessageId(),
+          role: "user",
+          content: "",
+          isAttachment: true,
+          isUploading: false,
+          attachment: { fileName: file.name, fileType: file.type, s3Key },
+        };
+        if (idx === -1) return [...prev, attachmentBubble];
+        const copy = [...prev];
+        copy.splice(idx, 0, attachmentBubble);
+        return copy;
+      });
+    }
     const payload = sessionIdRef.current
       ? {
           action: "existingChat",
@@ -394,12 +471,30 @@ export default function Home() {
           user_input: trimmed,
           last_msg_timestamp: now,
           user_id: baseUserId,
+          ...(s3Key
+            ? {
+                file_input: {
+                  file_name: ((window as any).__kaisaUploadedName as string) || file?.name || "document.pdf",
+                  s3_file_name: `${s3Key}`,
+                  file_type: "application/pdf",
+                },
+              }
+            : {}),
         }
       : {
           action: "newChat",
           agent: assistantMeta.id,
           user_input: trimmed,
           user_id: baseUserId,
+          ...(s3Key
+            ? {
+                file_input: {
+                  file_name: ((window as any).__kaisaUploadedName as string) || file?.name || "document.pdf",
+                  s3_file_name: `${s3Key}`,
+                  file_type: "application/pdf",
+                },
+              }
+            : {}),
         };
 
     console.info("[WebSocket] sending payload", payload);
@@ -551,7 +646,26 @@ export default function Home() {
                           : "bg-kaisa-blue/10 text-kaisa-midnight/90"
                       }`}
                     >
-                      {message.isStreaming && !message.content ? <LoadingDots /> : message.content}
+                      {message.isAttachment ? (
+                        <div className="flex items-center gap-2">
+                          <Image src="/pdf.png" alt="PDF" width={24} height={24} className="h-6 w-6" />
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-semibold truncate max-w-[220px]">{message.attachment?.fileName || "document.pdf"}</span>
+                            <span className="text-[10px] uppercase tracking-wide text-white/70">PDF</span>
+                          </div>
+                          {message.isUploading && (
+                            <span className="ml-2 flex items-center gap-1">
+                              <span className="uploading-dot" />
+                              <span className="uploading-dot" />
+                              <span className="uploading-dot" />
+                            </span>
+                          )}
+                        </div>
+                      ) : message.isStreaming && !message.content ? (
+                        <LoadingDots />
+                      ) : (
+                        message.content
+                      )}
                     </div>
                     {isUser && (
                       <Image
@@ -568,8 +682,45 @@ export default function Home() {
             </div>
 
             <ChatInput
-              onSubmit={async (message) => {
-                await handleSendMessage(message);
+              isFileUploading={isFileUploading}
+              uploadProgress={uploadProgress}
+              onFileSelected={async (file) => {
+                if (!file || file.type !== "application/pdf") return;
+                // trigger upload immediately, progress shown in chip
+                setIsFileUploading(true);
+                setUploadProgress(0);
+                try {
+                  const key = `${crypto.randomUUID()}.pdf`;
+                  const uploadUrl = `https://kaisa-temp-bucket.s3.amazonaws.com/public/${key}`;
+                  await new Promise<void>((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("PUT", uploadUrl, true);
+                    xhr.setRequestHeader("Content-Type", "application/pdf");
+                    xhr.upload.onprogress = (e) => {
+                      if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+                    };
+                    xhr.onerror = () => reject(new Error("XHR upload error"));
+                    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(String(xhr.status))));
+                    xhr.send(file);
+                  });
+                  // Store temporary uploaded key for later send
+                  // reuse assistantChunksRef to avoid adding new state – but safer to keep a ref
+                  (window as any).__kaisaUploadedKey = key;
+                  (window as any).__kaisaUploadedName = file.name;
+                } catch (e) {
+                  console.error("# immediate upload failed", e);
+                } finally {
+                  setIsFileUploading(false);
+                  setUploadProgress(null);
+                }
+              }}
+              onSubmit={async (message, file) => {
+                // reuse immediately uploaded key if present
+                const injectedFile = file || (typeof (window as any).__kaisaUploadedKey === "string" ? { name: (window as any).__kaisaUploadedName, type: "application/pdf" } as File : undefined);
+                await handleSendMessage(message, injectedFile);
+                // clear temp
+                (window as any).__kaisaUploadedKey = undefined;
+                (window as any).__kaisaUploadedName = undefined;
               }}
             />
           </div>
