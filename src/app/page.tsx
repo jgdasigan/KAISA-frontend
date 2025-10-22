@@ -257,23 +257,30 @@ export default function Home() {
         }
         return;
       }
-      if ("type" in data && data.type === "chunk") {
-        assistantResponseBufferRef.current += data.data;
-        upsertAssistantBubble({
-          id: lastMessageIdRef.current,
-          agentId: assistantId,
-          content: assistantResponseBufferRef.current,
-        });
-        return;
-      }
-      if ("type" in data && data.type === "done") {
-        upsertAssistantBubble({
-          id: lastMessageIdRef.current,
-          agentId: assistantId,
-          content: assistantResponseBufferRef.current,
-          isFinal: true,
-        });
-        return;
+      // Handle streaming protocol: message_status + agent_response
+      if ("message_status" in data) {
+        const status = (data as { message_status?: string }).message_status;
+        const chunk = (data as { agent_response?: string }).agent_response || "";
+        if (!sessionIdRef.current && typeof incomingSessionId === "string") {
+          setSessionId(incomingSessionId);
+          sessionIdRef.current = incomingSessionId;
+        }
+        if (status === "start_of_message") {
+          assistantResponseBufferRef.current = "";
+          lastMessageIdRef.current = createMessageId();
+          upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: "" });
+          return;
+        }
+        if (status === "in_progress") {
+          assistantResponseBufferRef.current += chunk;
+          upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: assistantResponseBufferRef.current });
+          return;
+        }
+        if (status === "end_of_message") {
+          const finalContent = assistantResponseBufferRef.current || chunk;
+          upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: finalContent, isFinal: true });
+          return;
+        }
       }
       if ("error" in data && data.error) {
         upsertAssistantBubble({
