@@ -28,23 +28,7 @@ const createMessageId = () => {
   return Date.now() + clientMessageSequence;
 };
 
-const readFileAsBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== "string") {
-        reject(new Error("Failed to read file"));
-        return;
-      }
-      const [, base64Payload] = result.split(",");
-      resolve(base64Payload ?? result);
-    };
-    reader.onerror = () => {
-      reject(reader.error ?? new Error("Failed to read file"));
-    };
-    reader.readAsDataURL(file);
-  });
+// removed unused readFileAsBase64 helper
 
 type ChatBubble = {
   id: number;
@@ -88,7 +72,7 @@ export default function Home() {
   ]);
 
   const agentProfiles = AGENT_PROFILES;
-  const currentAgent = activeAgent || DEFAULT_AGENT;
+  // const currentAgent = activeAgent || DEFAULT_AGENT; // not used
   const previousAgentIdRef = useRef<string | undefined>(undefined);
   const pendingOptionsRef = useRef<{ useLandingMessage?: boolean; forceChatVisible?: boolean } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -97,6 +81,8 @@ export default function Home() {
   const assistantChunksRef = useRef<string[]>([]);
   const isStreamingRef = useRef(false);
   const lastMessageIdRef = useRef<number>(messages[messages.length - 1]?.id ?? Date.now());
+  const uploadedKeyRef = useRef<string | null>(null);
+  const uploadedNameRef = useRef<string | null>(null);
 
   // # Ensure socket connects immediately on mount so the first message isn't queued
   useEffect(() => {
@@ -216,7 +202,7 @@ export default function Home() {
       useLandingMessage: shouldUseLandingCopy,
       forceChatVisible: pendingOptions?.forceChatVisible,
     });
-  }, [activeAgent, hasSessionStarted]);
+  }, [activeAgent, hasSessionStarted, applyAgentSelection]);
 
   const propagateMessages = (nextMessages: typeof messages) => {
     setMessages(nextMessages);
@@ -397,8 +383,8 @@ export default function Home() {
 
     // Optional: show uploading indicator if a PDF is attached
     let s3Key: string | undefined;
-    if ((window as any).__kaisaUploadedKey) {
-      s3Key = (window as any).__kaisaUploadedKey as string;
+    if (uploadedKeyRef.current) {
+      s3Key = uploadedKeyRef.current;
     } else if (file && file.type === "application/pdf") {
       setIsFileUploading(true);
       setUploadProgress(0);
@@ -440,7 +426,7 @@ export default function Home() {
     }
 
     // If a file was provided but no uploaded key was produced, do not send the payload
-    if (((file && file.type === "application/pdf") || (window as any).__kaisaUploadedName) && !s3Key) {
+    if (((file && file.type === "application/pdf") || uploadedNameRef.current) && !s3Key) {
       throw new Error("Upload did not complete");
     }
 
@@ -448,7 +434,7 @@ export default function Home() {
     const baseUserId = userDetails?.id || "demo-user";
     const now = new Date().toISOString().slice(0, 19).replace("T", " ");
     // If we have an uploaded file, show the attachment chip in the thread now (after Send)
-    if (s3Key && file) {
+    if (s3Key && (file || uploadedNameRef.current)) {
       setMessages((prev) => {
         const idx = prev.findIndex((m) => m.id === lastMessageIdRef.current);
         const attachmentBubble: ChatBubble = {
@@ -457,7 +443,7 @@ export default function Home() {
           content: "",
           isAttachment: true,
           isUploading: false,
-          attachment: { fileName: file.name, fileType: file.type, s3Key },
+          attachment: { fileName: (uploadedNameRef.current || file?.name) as string, fileType: "application/pdf", s3Key },
         };
         if (idx === -1) return [...prev, attachmentBubble];
         const copy = [...prev];
@@ -476,7 +462,7 @@ export default function Home() {
           ...(s3Key
             ? {
                 file_input: {
-                  file_name: ((window as any).__kaisaUploadedName as string) || file?.name || "document.pdf",
+                  file_name: uploadedNameRef.current || file?.name || "document.pdf",
                   s3_file_name: `${s3Key}`,
                   file_type: "application/pdf",
                 },
@@ -491,7 +477,7 @@ export default function Home() {
           ...(s3Key
             ? {
                 file_input: {
-                  file_name: ((window as any).__kaisaUploadedName as string) || file?.name || "document.pdf",
+                  file_name: uploadedNameRef.current || file?.name || "document.pdf",
                   s3_file_name: `${s3Key}`,
                   file_type: "application/pdf",
                 },
@@ -705,10 +691,9 @@ export default function Home() {
                     xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(String(xhr.status))));
                     xhr.send(file);
                   });
-                  // Store temporary uploaded key for later send
-                  // reuse assistantChunksRef to avoid adding new state – but safer to keep a ref
-                  (window as any).__kaisaUploadedKey = key;
-                  (window as any).__kaisaUploadedName = file.name;
+                  // Store for later send
+                  uploadedKeyRef.current = key;
+                  uploadedNameRef.current = file.name;
                 } catch (e) {
                   console.error("# immediate upload failed", e);
                 } finally {
@@ -718,11 +703,11 @@ export default function Home() {
               }}
               onSubmit={async (message, file) => {
                 // reuse immediately uploaded key if present
-                const injectedFile = file || (typeof (window as any).__kaisaUploadedKey === "string" ? { name: (window as any).__kaisaUploadedName, type: "application/pdf" } as File : undefined);
+                const injectedFile = file || (uploadedKeyRef.current ? ({ name: uploadedNameRef.current as string, type: "application/pdf" } as File) : undefined);
                 await handleSendMessage(message, injectedFile);
                 // clear temp
-                (window as any).__kaisaUploadedKey = undefined;
-                (window as any).__kaisaUploadedName = undefined;
+                uploadedKeyRef.current = null;
+                uploadedNameRef.current = null;
               }}
             />
           </div>
