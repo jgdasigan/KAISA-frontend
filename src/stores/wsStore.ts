@@ -115,8 +115,9 @@ export const useWsStore = create<WebSocketState & WebSocketActions>((set, get) =
 
     ws.onmessage = (event) => {
       try {
-        const data: WebSocketMessage = JSON.parse(event.data);
-        const sessionId = typeof (data as any).session_id === "string" ? (data as any).session_id : undefined;
+        const parsed: unknown = JSON.parse(event.data);
+        const data = parsed as WebSocketMessage;
+        const sessionId = (parsed as { session_id?: string }).session_id;
         if (typeof sessionId === "string" && sessionListeners.has(sessionId)) {
           sessionListeners.get(sessionId)!.forEach((cb) => cb(data));
         }
