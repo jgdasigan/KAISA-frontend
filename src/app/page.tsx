@@ -320,11 +320,16 @@ export default function Home() {
     }
   }, [sessionId, addSessionListener, handleWsMessage, removeSessionListener]);
 
-  // Subscribe globally so we can receive the initial context and session_id
+  // Subscribe globally only until we know the session_id; then rely on session listener
   useEffect(() => {
-    addGlobalListener(handleWsMessage);
-    return () => removeGlobalListener(handleWsMessage);
-  }, [addGlobalListener, removeGlobalListener, handleWsMessage]);
+    if (!sessionIdRef.current) {
+      addGlobalListener(handleWsMessage);
+      return () => removeGlobalListener(handleWsMessage);
+    }
+    // If we already have a session id, make sure the global listener is not attached
+    removeGlobalListener(handleWsMessage);
+    return undefined;
+  }, [addGlobalListener, removeGlobalListener, handleWsMessage, sessionId]);
 
   const handleSendMessage = async (message: string, file?: File | null) => {
     const trimmed = message.trim();
@@ -425,13 +430,19 @@ export default function Home() {
     applyAgentSelection(DEFAULT_AGENT, { useLandingMessage: true });
   };
 
-  const containerStyle = {
+  const landingContainerStyle = {
     minHeight: "calc(94vh - 56px)",
+  };
+  const chatContainerStyle = {
+    height: "calc(94vh - 56px)",
   };
 
   return (
     <AppShell onNewChat={handleResetWorkspace} showAgentDropdown={isChatVisible}>
-      <div className="flex flex-1 flex-col gap-4 px-3 pb-4 pt-2 text-kaisa-midnight md:px-4" style={containerStyle}>
+      <div
+        className="flex flex-1 flex-col gap-4 px-3 pb-4 pt-2 text-kaisa-midnight md:px-4"
+        style={isChatVisible ? chatContainerStyle : landingContainerStyle}
+      >
         {!isChatVisible && (
           <section className="mx-auto flex h-full w-full max-w-5xl flex-col gap-3">
             <div className="pt-15 text-center">
@@ -509,7 +520,7 @@ export default function Home() {
 
         {isChatVisible && (
           <div className="flex h-full flex-1 flex-col rounded-3xl bg-white/90 p-6 shadow-[0_24px_50px_-28px_rgba(37,56,88,0.45)]">
-            {/* Wrapping the message list keeps spacing consistent with the redesigned chat shell. */}
+            {/* Message list scrolls inside fixed-height chat window */}
             <div className="scrollbar-thin flex flex-1 flex-col gap-4 overflow-y-auto py-4 pr-2 text-sm text-kaisa-midnight">
               {messages.map((message) => {
                 const avatarAgent =
