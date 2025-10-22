@@ -84,6 +84,7 @@ export const useWsStore = create<WebSocketState & WebSocketActions>((set, get) =
       console.error("[WebSocket] Missing URL");
       return;
     }
+    console.info("[WebSocket] Connecting to", runtimeUrl);
 
     const { socket } = get();
     if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
