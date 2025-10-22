@@ -53,12 +53,16 @@ export const ChatInput = ({ onSubmit, disabled }: ChatInputProps) => {
           Attach a document
           <input
             type="file"
+            accept="application/pdf"
             className="hidden"
             onChange={(event) => {
-              const selected = event.target.files?.[0];
-              if (selected) {
-                setFile(selected);
+              const selected = event.target.files?.[0] || null;
+              if (selected && selected.type !== "application/pdf") {
+                // # only allow PDF files
+                event.currentTarget.value = "";
+                return;
               }
+              setFile(selected);
             }}
             disabled={isDisabled}
           />

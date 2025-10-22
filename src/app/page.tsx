@@ -240,6 +240,7 @@ export default function Home() {
       });
       if (partial.isFinal) {
         assistantResponseBufferRef.current = "";
+        assistantChunksRef.current = [];
         isStreamingRef.current = false;
       }
     },
@@ -277,6 +278,7 @@ export default function Home() {
         }
         // Reset buffer; rely on the existing placeholder created on send
         assistantResponseBufferRef.current = "";
+        assistantChunksRef.current = [];
         isStreamingRef.current = true;
         return;
       }
@@ -288,8 +290,8 @@ export default function Home() {
       if (status === "end_of_message") {
         if (chunk) assistantChunksRef.current.push(chunk);
         const finalContent = assistantChunksRef.current.join("");
-        // Ensure we persist the last content; do not clear the buffer immediately
         upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: finalContent, isFinal: true });
+        assistantChunksRef.current = [];
         isStreamingRef.current = false;
         return;
       }
@@ -302,6 +304,7 @@ export default function Home() {
       if ((data as { type?: string }).type === "done") {
         const finalContent = assistantChunksRef.current.join("");
         upsertAssistantBubble({ id: lastMessageIdRef.current, agentId: assistantId, content: finalContent, isFinal: true });
+        assistantChunksRef.current = [];
         isStreamingRef.current = false;
         return;
       }
@@ -363,6 +366,7 @@ export default function Home() {
 
     lastMessageIdRef.current = createMessageId();
     assistantResponseBufferRef.current = "";
+    assistantChunksRef.current = [];
     isStreamingRef.current = true;
 
     const nextMessages: ChatBubble[] = [
@@ -396,15 +400,6 @@ export default function Home() {
           agent: assistantMeta.id,
           user_input: trimmed,
           user_id: baseUserId,
-          ...(file
-            ? {
-                file_input: {
-                  file_name: file.name,
-                  s3_file_name: file.name,
-                  file_type: file.type || "application/octet-stream",
-                },
-              }
-            : {}),
         };
 
     console.info("[WebSocket] sending payload", payload);
