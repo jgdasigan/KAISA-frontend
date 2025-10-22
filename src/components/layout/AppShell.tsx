@@ -3,7 +3,6 @@
 import { ReactNode, useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { ChatHistoryPanel } from "@/components/layout/ChatHistoryPanel";
 import { AboutModal } from "@/components/modals/AboutModal";
 
 type AppShellProps = {
@@ -26,7 +25,9 @@ export const AppShell = ({ children, onNewChat, showAgentDropdown = true }: AppS
         />
         {showHistory && (
           <div className="hidden w-full max-w-sm border-r border-white/10 bg-white/60 px-5 py-6 shadow-lg backdrop-blur lg:block">
-            <ChatHistoryPanel />
+            <div className="flex h-full flex-col items-center justify-center text-sm text-kaisa-midnight/60">
+              Chat history coming soon.
+            </div>
           </div>
         )}
         <main className="flex-1 overflow-hidden px-4 py-6 md:px-8">

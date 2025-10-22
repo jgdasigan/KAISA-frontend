@@ -1,17 +1,11 @@
 "use client";
 
 import { create } from "zustand";
-
-type AgentInfo = {
-  id: string;
-  displayName: string;
-  apiKey?: string;
-  icon: string;
-};
+import type { AgentProfile } from "@/data/agents";
 
 type AgentStoreState = {
-  activeAgent?: AgentInfo;
-  setActiveAgent: (agent: AgentInfo) => void;
+  activeAgent?: AgentProfile;
+  setActiveAgent: (agent: AgentProfile) => void;
   clearAgent: () => void;
 };
 

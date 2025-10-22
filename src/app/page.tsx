@@ -6,7 +6,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgentStore } from "@/stores/agentStore";
 import Image from "next/image";
-import { useChatStore } from "@/stores/chatStore";
 import { useWsStore } from "@/stores/wsStore";
 import type { MessageHandler } from "@/stores/wsStore";
 import {
@@ -19,18 +18,6 @@ import {
 const agentMeta = AGENT_PROFILES_BY_TITLE;
 const LANDING_KAI_MESSAGE =
   "I’m Teacher KAI, here to guide you today. Ask me your questions, or choose your mentor above: Principal Aralyn for lesson guidance, Tallya for quizzes, or Kuya Revi for step-by-step review tips. Let’s get learning!";
-
-type AgentApiId = "general" | "curriculum" | "quizzer" | "reviewer";
-
-const createSessionId = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `session-${Date.now()}`;
-
-const AGENT_ID_TO_API_AGENT: Record<string, AgentApiId> = {
-  [DEFAULT_AGENT.id]: "general",
-  [AGENT_PROFILES.curriculum.id]: "curriculum",
-  [AGENT_PROFILES.quizzer.id]: "quizzer",
-  [AGENT_PROFILES.review.id]: "reviewer",
-};
 
 const FALLBACK_ERROR_MESSAGE = "Sorry, I am having trouble processing your request.";
 
@@ -76,10 +63,9 @@ const LoadingDots = () => (
 
 export default function Home() {
   const { userDetails } = useAuthStore();
-  const userName = userDetails?.given_name || userDetails?.family_name || "Joyce";
+  const userName = userDetails?.given_name || userDetails?.family_name || "User";
   const { setActiveAgent, activeAgent } = useAgentStore();
-  const { setSessionStarted } = useChatStore();
-  const { connect, send, addSessionListener, removeSessionListener, isConnected } = useWsStore();
+  const { connect, send, addSessionListener, removeSessionListener, addGlobalListener, removeGlobalListener, isConnected } = useWsStore();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [hasSessionStarted, setHasSessionStarted] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
@@ -92,17 +78,20 @@ export default function Home() {
     },
   ]);
 
-  const defaultAgent = DEFAULT_AGENT;
-
   const agentProfiles = AGENT_PROFILES;
-  const currentAgent = activeAgent || defaultAgent;
-  const previousAgentIdRef = useRef<string | undefined>();
+  const currentAgent = activeAgent || DEFAULT_AGENT;
+  const previousAgentIdRef = useRef<string | undefined>(undefined);
   const pendingOptionsRef = useRef<{ useLandingMessage?: boolean; forceChatVisible?: boolean } | null>(null);
-  const [sessionId, setSessionId] = useState(createSessionId());
-  const sessionIdRef = useRef(sessionId);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const sessionIdRef = useRef<string | null>(sessionId);
   const assistantResponseBufferRef = useRef<string>("");
   const isStreamingRef = useRef(false);
   const lastMessageIdRef = useRef<number>(messages[messages.length - 1]?.id ?? Date.now());
+
+  // # Ensure socket connects immediately on mount so the first message isn't queued
+  useEffect(() => {
+    connect();
+  }, [connect]);
 
   useEffect(() => {
     sessionIdRef.current = sessionId;
@@ -123,7 +112,6 @@ export default function Home() {
   const ensureSessionStarted = () => {
     if (!hasSessionStarted) {
       setHasSessionStarted(true);
-      setSessionStarted(true);
       syncAssistantIntro(DEFAULT_AGENT, DEFAULT_AGENT.content);
       if (!isConnected) {
         connect();
@@ -162,7 +150,6 @@ export default function Home() {
 
     if (shouldShowLanding) {
       setHasSessionStarted(false);
-      setSessionStarted(false);
       setSelectedAgentId(null);
       setIsChatVisible(false);
       setMessages([
@@ -177,7 +164,6 @@ export default function Home() {
     }
 
     setHasSessionStarted(true);
-    setSessionStarted(true);
     setIsChatVisible(true);
     setSelectedAgentId(agent.id);
     setMessages([
@@ -188,8 +174,7 @@ export default function Home() {
         agentId: agent.id,
       },
     ]);
-    const newSessionId = createSessionId();
-    setSessionId(newSessionId);
+    // Reset any buffered assistant output for the new visible chat
     assistantResponseBufferRef.current = "";
   };
 
@@ -210,7 +195,7 @@ export default function Home() {
       ? false
       : pendingOptions?.useLandingMessage ?? (!hasSessionStarted && activeAgent.id === DEFAULT_AGENT.id);
 
-    applyAgentSelection(activeAgent, {
+    applyAgentSelection(activeAgent ?? DEFAULT_AGENT, {
       useLandingMessage: shouldUseLandingCopy,
       forceChatVisible: pendingOptions?.forceChatVisible,
     });
@@ -255,15 +240,23 @@ export default function Home() {
 
   const handleWsMessage = useCallback<MessageHandler>(
     (data) => {
-      const sessionId = (data as { session_id?: string }).session_id;
-      if (sessionId && sessionId !== sessionIdRef.current) {
+      const incomingSessionId = (data as { session_id?: string }).session_id;
+      if (incomingSessionId && sessionIdRef.current && incomingSessionId !== sessionIdRef.current) {
         return;
       }
-      const assistantMeta =
-        selectedAgentId && Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId)
-          ? (Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId) as (typeof agentProfiles)[keyof typeof agentProfiles])
-          : defaultAgent;
+    const assistantMeta =
+      selectedAgentId && Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId)
+        ? (Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId) as (typeof agentProfiles)[keyof typeof agentProfiles])
+        : DEFAULT_AGENT;
       const assistantId = assistantMeta.id;
+      // Handle context payload from backend to capture session_id
+      if ("chat_messages" in data && "session_id" in data) {
+        if (!sessionIdRef.current && typeof data.session_id === "string") {
+          setSessionId(data.session_id);
+          sessionIdRef.current = data.session_id;
+        }
+        return;
+      }
       if ("type" in data && data.type === "chunk") {
         assistantResponseBufferRef.current += data.data;
         upsertAssistantBubble({
@@ -291,16 +284,24 @@ export default function Home() {
         });
       }
     },
-    [agentProfiles, defaultAgent, selectedAgentId, upsertAssistantBubble],
+    [agentProfiles, selectedAgentId, upsertAssistantBubble],
   );
 
   useEffect(() => {
-    const sessionId = sessionIdRef.current;
-    addSessionListener(sessionId, handleWsMessage);
-    return () => {
-      removeSessionListener(sessionId, handleWsMessage);
-    };
+    const currentSessionId = sessionIdRef.current;
+    if (currentSessionId) {
+      addSessionListener(currentSessionId, handleWsMessage);
+      return () => {
+        removeSessionListener(currentSessionId, handleWsMessage);
+      };
+    }
   }, [sessionId, addSessionListener, handleWsMessage, removeSessionListener]);
+
+  // Subscribe globally so we can receive the initial context and session_id
+  useEffect(() => {
+    addGlobalListener(handleWsMessage);
+    return () => removeGlobalListener(handleWsMessage);
+  }, [addGlobalListener, removeGlobalListener, handleWsMessage]);
 
   const handleSendMessage = async (message: string, file?: File | null) => {
     const trimmed = message.trim();
@@ -310,7 +311,6 @@ export default function Home() {
 
     if (!selectedAgentId) {
       pendingOptionsRef.current = { forceChatVisible: true };
-      setActiveAgent(defaultAgent);
     }
 
     const userEntry = {
@@ -322,7 +322,7 @@ export default function Home() {
     const assistantMeta =
       selectedAgentId && Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId)
         ? (Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId) as (typeof agentProfiles)[keyof typeof agentProfiles])
-        : defaultAgent;
+        : DEFAULT_AGENT;
 
     setActiveAgent(assistantMeta);
 
@@ -344,37 +344,35 @@ export default function Home() {
 
     propagateMessages(nextMessages);
 
-    let uploadedFile: string | undefined;
-
-    if (file) {
-      try {
-        uploadedFile = await readFileAsBase64(file);
-      } catch (error) {
-        console.error("# file upload failed", error);
-      }
-    }
-
-    const payload = {
-      action: "sendMessage",
-      agent: AGENT_ID_TO_API_AGENT[assistantMeta.id] ?? "general",
-      payload: {
-        message: trimmed,
-        session_id: sessionIdRef.current,
-        uploaded_file: uploadedFile,
-      },
-    } satisfies Record<string, unknown>;
-
-    const payloadLog = uploadedFile
+    // Build WebSocket payloads matching backend contract
+    const baseUserId = userDetails?.id || "demo-user";
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const payload = sessionIdRef.current
       ? {
-          ...payload,
-          payload: {
-            ...payload.payload,
-            uploaded_file: `${uploadedFile.slice(0, 24)}... (${uploadedFile.length} chars)`,
-          },
+          action: "chatExisting",
+          session_id: sessionIdRef.current,
+          agent: assistantMeta.id,
+          user_input: trimmed,
+          last_msg_timestamp: now,
+          user_id: baseUserId,
         }
-      : payload;
+      : {
+          action: "newChat",
+          agent: assistantMeta.id,
+          user_input: trimmed,
+          user_id: baseUserId,
+          ...(file
+            ? {
+                file_input: {
+                  file_name: file.name,
+                  s3_file_name: file.name,
+                  file_type: file.type || "application/octet-stream",
+                },
+              }
+            : {}),
+        };
 
-    console.info("[WebSocket] sending payload", payloadLog);
+    console.info("[WebSocket] sending payload", payload);
 
     try {
       await send(payload);
@@ -400,8 +398,8 @@ export default function Home() {
   const handleResetWorkspace = () => {
     setSelectedAgentId(null);
     pendingOptionsRef.current = { useLandingMessage: true };
-    setActiveAgent(defaultAgent);
-    applyAgentSelection(defaultAgent, { useLandingMessage: true });
+    setActiveAgent(DEFAULT_AGENT);
+    applyAgentSelection(DEFAULT_AGENT, { useLandingMessage: true });
   };
 
   const containerStyle = {
@@ -441,8 +439,8 @@ export default function Home() {
                     type="button"
                     onClick={() => {
                       pendingOptionsRef.current = { forceChatVisible: true };
-                    setActiveAgent(defaultAgent);
-                    applyAgentSelection(defaultAgent, { forceChatVisible: true });
+                    setActiveAgent(DEFAULT_AGENT);
+                    applyAgentSelection(DEFAULT_AGENT, { forceChatVisible: true });
                     }}
                     className="self-end rounded-full border border-kaisa-blue/30 bg-kaisa-blue/10 px-4 py-2 text-xs font-semibold text-kaisa-blue transition hover:bg-kaisa-blue/15"
                   >

@@ -115,8 +115,8 @@ export const useWsStore = create<WebSocketState & WebSocketActions>((set, get) =
     ws.onmessage = (event) => {
       try {
         const data: WebSocketMessage = JSON.parse(event.data);
-        const sessionId = data.session_id;
-        if (sessionId && sessionListeners.has(sessionId)) {
+        const sessionId = typeof (data as any).session_id === "string" ? (data as any).session_id : undefined;
+        if (typeof sessionId === "string" && sessionListeners.has(sessionId)) {
           sessionListeners.get(sessionId)!.forEach((cb) => cb(data));
         }
         globalListeners.forEach((cb) => cb(data));
@@ -125,11 +125,12 @@ export const useWsStore = create<WebSocketState & WebSocketActions>((set, get) =
       }
     };
 
-    ws.onerror = () => {
-      console.error("[WebSocket] Error");
+    ws.onerror = (e) => {
+      console.error("[WebSocket] Error", e);
     };
 
-    ws.onclose = () => {
+    ws.onclose = (e) => {
+      console.error("[WebSocket] Closed", e.code, e.reason);
       set({ isConnected: false, socket: null });
       stopHeartbeat();
       if (manualClose) {

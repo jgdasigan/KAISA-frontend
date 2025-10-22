@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { chatHistoryApi } from "@/lib/api/history";
 import { useChatHistoryStore } from "@/stores/chatHistoryStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useRouter } from "next/navigation";
@@ -17,10 +16,8 @@ export const ChatHistoryPanel = () => {
       if (!authStore.userDetails?.id) return;
       setLoading(true);
       try {
-        const response = await chatHistoryApi.getUserSessions(authStore.userDetails.id);
-        setSessions(response.data ?? []);
-      } catch (error) {
-        console.error("[ChatHistoryPanel] failed to fetch sessions", error);
+        // # REST history API removed; to be replaced by WebSocket action later
+        setSessions([]);
       } finally {
         setLoading(false);
       }

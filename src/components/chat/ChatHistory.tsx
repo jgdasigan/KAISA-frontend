@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { chatApi } from "@/lib/api/chat";
 import { useChatStore } from "@/stores/chatStore";
-import type { ChatMessage } from "@/types/chat";
 
 export type ChatHistoryProps = {
   sessionId: string;
@@ -15,12 +13,8 @@ export const ChatHistory = ({ sessionId }: ChatHistoryProps) => {
   useEffect(() => {
     const load = async () => {
       if (!sessionId) return;
-      try {
-        const response = await chatApi.getMessages(sessionId);
-        setMessages(response.data?.data ?? []);
-      } catch (error) {
-        console.error("[ChatHistory] Failed to load messages", error);
-      }
+      // # REST fetching removed for WebSocket-only mode
+      setMessages([]);
     };
 
     void load();
@@ -39,10 +33,9 @@ export const ChatHistory = ({ sessionId }: ChatHistoryProps) => {
 
   return (
     <div className="flex flex-col gap-4">
-      {messages.map((message: ChatMessage) => (
-        <div key={`${message.timestamp}-${message.role}`} className="text-kaisa-midnight/80">
-          <span className="text-xs uppercase tracking-[0.3em] text-kaisa-blue/50">{new Date(message.timestamp).toLocaleTimeString()}</span>
-          <p className="mt-1 text-sm">{message.message}</p>
+      {messages.map((message) => (
+        <div key={message.id} className="text-kaisa-midnight/80">
+          <p className="mt-1 text-sm">{message.content}</p>
         </div>
       ))}
     </div>

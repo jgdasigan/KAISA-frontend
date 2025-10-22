@@ -1,7 +1,14 @@
 "use client";
 
 import { create } from "zustand";
-import type { ChatMessage } from "@/types/chat";
+
+export type ChatMessage = {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  agentId?: string;
+  isStreaming?: boolean;
+};
 
 export type ChatState = {
   messages: ChatMessage[];
@@ -34,7 +41,7 @@ export const useChatStore = create<ChatState & ChatActions>((set) => ({
       const messages = [...state.messages];
       const lastIdx = messages.map((msg) => msg.role).lastIndexOf("assistant");
       if (lastIdx !== -1) {
-        messages[lastIdx] = { ...messages[lastIdx], message: text };
+        messages[lastIdx] = { ...messages[lastIdx], content: text };
       }
       return { messages };
     }),

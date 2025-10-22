@@ -1,6 +1,6 @@
 "use client";
 
-import { History, Info, MessageSquare, LogOut, PanelLeftOpen, PanelRight, User } from "lucide-react";
+import { History, Info, MessageSquare, PanelLeftOpen, PanelRight, User } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/utils/cn";
@@ -93,16 +93,6 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
               {authStore.userDetails?.email || "user@kaisa.ai"}
             </span>
           </div>
-          {!collapsed && (
-            <button
-              type="button"
-              onClick={() => authStore.clearSession()}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-kaisa-red/90 text-white transition hover:bg-kaisa-red"
-              aria-label="Sign out"
-            >
-              <LogOut className="h-4 w-4" aria-hidden />
-            </button>
-          )}
         </div>
       </div>
     </aside>
