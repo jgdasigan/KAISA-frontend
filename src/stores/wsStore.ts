@@ -2,12 +2,45 @@
 
 import { create } from "zustand";
 
-export type WebSocketMessage = {
-  message_status: "start_of_message" | "in_progress" | "end_of_message" | "error";
-  agent_response: string;
+export type WebSocketChunkMessage = {
+  type: "chunk";
+  data: string;
   session_id?: string;
-  [key: string]: unknown;
+  agent?: string;
 };
+
+export type WebSocketDoneMessage = {
+  type: "done";
+  session_id?: string;
+};
+
+export type WebSocketErrorMessage = {
+  error: string;
+  connectionId?: string;
+  session_id?: string;
+};
+
+export type WebSocketProcessingMessage = {
+  message: "processing";
+  connectionId: string;
+  session_id?: string;
+};
+
+export type WebSocketContextMessage = {
+  session_id: string;
+  user_id: string;
+  chat_messages: unknown[];
+  has_file_attachment: boolean;
+  connectionId: string;
+};
+
+export type WebSocketMessage =
+  | WebSocketChunkMessage
+  | WebSocketDoneMessage
+  | WebSocketErrorMessage
+  | WebSocketProcessingMessage
+  | WebSocketContextMessage
+  | Record<string, unknown>;
 
 export type MessageHandler = (data: WebSocketMessage) => void;
 
@@ -30,6 +63,7 @@ export type WebSocketActions = {
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 3000;
 const HEARTBEAT_INTERVAL = 25000;
+const DEFAULT_WEBSOCKET_URL = "wss://mq1tkjuvm0.execute-api.us-east-1.amazonaws.com/production";
 
 let reconnectAttempts = 0;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -45,7 +79,7 @@ export const useWsStore = create<WebSocketState & WebSocketActions>((set, get) =
   isConnected: false,
   pendingQueue: [],
   connect: (url) => {
-    const runtimeUrl = url || process.env.NEXT_PUBLIC_WEBSOCKET_URL || "";
+    const runtimeUrl = url || process.env.NEXT_PUBLIC_WEBSOCKET_URL || DEFAULT_WEBSOCKET_URL;
     if (!runtimeUrl) {
       console.error("[WebSocket] Missing URL");
       return;

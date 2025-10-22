@@ -3,10 +3,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useAuthStore } from "@/stores/authStore";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgentStore } from "@/stores/agentStore";
 import Image from "next/image";
 import { useChatStore } from "@/stores/chatStore";
+import { useWsStore } from "@/stores/wsStore";
+import type { MessageHandler } from "@/stores/wsStore";
 import {
   AGENT_PROFILES,
   AGENT_PROFILES_BY_ID,
@@ -18,18 +20,66 @@ const agentMeta = AGENT_PROFILES_BY_TITLE;
 const LANDING_KAI_MESSAGE =
   "I’m Teacher KAI, here to guide you today. Ask me your questions, or choose your mentor above: Principal Aralyn for lesson guidance, Tallya for quizzes, or Kuya Revi for step-by-step review tips. Let’s get learning!";
 
+type AgentApiId = "general" | "curriculum" | "quizzer" | "reviewer";
+
+const createSessionId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `session-${Date.now()}`;
+
+const AGENT_ID_TO_API_AGENT: Record<string, AgentApiId> = {
+  [DEFAULT_AGENT.id]: "general",
+  [AGENT_PROFILES.curriculum.id]: "curriculum",
+  [AGENT_PROFILES.quizzer.id]: "quizzer",
+  [AGENT_PROFILES.review.id]: "reviewer",
+};
+
+const FALLBACK_ERROR_MESSAGE = "Sorry, I am having trouble processing your request.";
+
+let clientMessageSequence = 0;
+const createMessageId = () => {
+  clientMessageSequence += 1;
+  return Date.now() + clientMessageSequence;
+};
+
+const readFileAsBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Failed to read file"));
+        return;
+      }
+      const [, base64Payload] = result.split(",");
+      resolve(base64Payload ?? result);
+    };
+    reader.onerror = () => {
+      reject(reader.error ?? new Error("Failed to read file"));
+    };
+    reader.readAsDataURL(file);
+  });
+
 type ChatBubble = {
   id: number;
   role: "user" | "assistant";
   content: string;
   agentId?: string;
+  isStreaming?: boolean;
 };
+
+const LoadingDots = () => (
+  <span className="flex items-center gap-1">
+    <span className="h-2.5 w-2.5 rounded-full bg-current opacity-80 animate-bounce" style={{ animationDelay: "-0.24s" }} />
+    <span className="h-2.5 w-2.5 rounded-full bg-current opacity-80 animate-bounce" style={{ animationDelay: "-0.12s" }} />
+    <span className="h-2.5 w-2.5 rounded-full bg-current opacity-80 animate-bounce" />
+  </span>
+);
 
 export default function Home() {
   const { userDetails } = useAuthStore();
   const userName = userDetails?.given_name || userDetails?.family_name || "Joyce";
   const { setActiveAgent, activeAgent } = useAgentStore();
   const { setSessionStarted } = useChatStore();
+  const { connect, send, addSessionListener, removeSessionListener, isConnected } = useWsStore();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [hasSessionStarted, setHasSessionStarted] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
@@ -48,6 +98,15 @@ export default function Home() {
   const currentAgent = activeAgent || defaultAgent;
   const previousAgentIdRef = useRef<string | undefined>();
   const pendingOptionsRef = useRef<{ useLandingMessage?: boolean; forceChatVisible?: boolean } | null>(null);
+  const [sessionId, setSessionId] = useState(createSessionId());
+  const sessionIdRef = useRef(sessionId);
+  const assistantResponseBufferRef = useRef<string>("");
+  const isStreamingRef = useRef(false);
+  const lastMessageIdRef = useRef<number>(messages[messages.length - 1]?.id ?? Date.now());
+
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   const landingMentors = useMemo(
     () => Object.values(agentProfiles),
@@ -66,6 +125,9 @@ export default function Home() {
       setHasSessionStarted(true);
       setSessionStarted(true);
       syncAssistantIntro(DEFAULT_AGENT, DEFAULT_AGENT.content);
+      if (!isConnected) {
+        connect();
+      }
     }
   };
 
@@ -126,6 +188,9 @@ export default function Home() {
         agentId: agent.id,
       },
     ]);
+    const newSessionId = createSessionId();
+    setSessionId(newSessionId);
+    assistantResponseBufferRef.current = "";
   };
 
   useEffect(() => {
@@ -155,7 +220,89 @@ export default function Home() {
     setMessages(nextMessages);
   };
 
-  const handleSendMessage = async (message: string) => {
+  const upsertAssistantBubble = useCallback(
+    (partial: { id: number; agentId: string; content: string; isFinal?: boolean }) => {
+      setMessages((prev) => {
+        const existingIndex = prev.findIndex((entry) => entry.id === partial.id);
+        if (existingIndex >= 0) {
+          const next = [...prev];
+          next[existingIndex] = {
+            ...next[existingIndex],
+            content: partial.content,
+            agentId: partial.agentId,
+            isStreaming: !partial.isFinal,
+          };
+          return next;
+        }
+        return [
+          ...prev,
+          {
+            id: partial.id,
+            role: "assistant",
+            content: partial.content,
+            agentId: partial.agentId,
+            isStreaming: !partial.isFinal,
+          },
+        ];
+      });
+      if (partial.isFinal) {
+        assistantResponseBufferRef.current = "";
+        isStreamingRef.current = false;
+      }
+    },
+    [],
+  );
+
+  const handleWsMessage = useCallback<MessageHandler>(
+    (data) => {
+      const sessionId = (data as { session_id?: string }).session_id;
+      if (sessionId && sessionId !== sessionIdRef.current) {
+        return;
+      }
+      const assistantMeta =
+        selectedAgentId && Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId)
+          ? (Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId) as (typeof agentProfiles)[keyof typeof agentProfiles])
+          : defaultAgent;
+      const assistantId = assistantMeta.id;
+      if ("type" in data && data.type === "chunk") {
+        assistantResponseBufferRef.current += data.data;
+        upsertAssistantBubble({
+          id: lastMessageIdRef.current,
+          agentId: assistantId,
+          content: assistantResponseBufferRef.current,
+        });
+        return;
+      }
+      if ("type" in data && data.type === "done") {
+        upsertAssistantBubble({
+          id: lastMessageIdRef.current,
+          agentId: assistantId,
+          content: assistantResponseBufferRef.current,
+          isFinal: true,
+        });
+        return;
+      }
+      if ("error" in data && data.error) {
+        upsertAssistantBubble({
+          id: lastMessageIdRef.current,
+          agentId: assistantId,
+          content: FALLBACK_ERROR_MESSAGE,
+          isFinal: true,
+        });
+      }
+    },
+    [agentProfiles, defaultAgent, selectedAgentId, upsertAssistantBubble],
+  );
+
+  useEffect(() => {
+    const sessionId = sessionIdRef.current;
+    addSessionListener(sessionId, handleWsMessage);
+    return () => {
+      removeSessionListener(sessionId, handleWsMessage);
+    };
+  }, [sessionId, addSessionListener, handleWsMessage, removeSessionListener]);
+
+  const handleSendMessage = async (message: string, file?: File | null) => {
     const trimmed = message.trim();
     if (!trimmed) return;
 
@@ -167,7 +314,7 @@ export default function Home() {
     }
 
     const userEntry = {
-      id: Date.now(),
+      id: createMessageId(),
       role: "user" as const,
       content: trimmed,
     } satisfies ChatBubble;
@@ -179,16 +326,67 @@ export default function Home() {
 
     setActiveAgent(assistantMeta);
 
-    propagateMessages([
+    lastMessageIdRef.current = createMessageId();
+    assistantResponseBufferRef.current = "";
+    isStreamingRef.current = true;
+
+    const nextMessages: ChatBubble[] = [
       ...messages,
       userEntry,
       {
-        id: Date.now() + 1,
+        id: lastMessageIdRef.current,
         role: "assistant" as const,
-        content: "Sorry, I am having trouble processing your request.",
+        content: "",
         agentId: assistantMeta.id,
+        isStreaming: true,
       },
-    ]);
+    ];
+
+    propagateMessages(nextMessages);
+
+    let uploadedFile: string | undefined;
+
+    if (file) {
+      try {
+        uploadedFile = await readFileAsBase64(file);
+      } catch (error) {
+        console.error("# file upload failed", error);
+      }
+    }
+
+    const payload = {
+      action: "sendMessage",
+      agent: AGENT_ID_TO_API_AGENT[assistantMeta.id] ?? "general",
+      payload: {
+        message: trimmed,
+        session_id: sessionIdRef.current,
+        uploaded_file: uploadedFile,
+      },
+    } satisfies Record<string, unknown>;
+
+    const payloadLog = uploadedFile
+      ? {
+          ...payload,
+          payload: {
+            ...payload.payload,
+            uploaded_file: `${uploadedFile.slice(0, 24)}... (${uploadedFile.length} chars)`,
+          },
+        }
+      : payload;
+
+    console.info("[WebSocket] sending payload", payloadLog);
+
+    try {
+      await send(payload);
+    } catch (error) {
+      console.error("# handleSendMessage failed", error);
+      upsertAssistantBubble({
+        id: lastMessageIdRef.current,
+        agentId: assistantMeta.id,
+        content: FALLBACK_ERROR_MESSAGE,
+        isFinal: true,
+      });
+    }
   };
 
   const handleAgentSelect = (title: string) => {
@@ -319,7 +517,7 @@ export default function Home() {
                           : "bg-kaisa-blue/10 text-kaisa-midnight/90"
                       }`}
                     >
-                      {message.content}
+                      {message.isStreaming && !message.content ? <LoadingDots /> : message.content}
                     </div>
                     {isUser && (
                       <Image
