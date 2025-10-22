@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout/AppShell";
+import MarkdownIt from "markdown-it";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useAuthStore } from "@/stores/authStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -69,6 +70,7 @@ const LoadingDots = () => (
 );
 
 export default function Home() {
+  const md = new MarkdownIt({ breaks: true, html: true, linkify: true, typographer: true });
   const { userDetails } = useAuthStore();
   const userName = userDetails?.given_name || userDetails?.family_name || "Student";
   const { setActiveAgent, activeAgent } = useAgentStore();
@@ -664,7 +666,7 @@ export default function Home() {
                       ) : message.isStreaming && !message.content ? (
                         <LoadingDots />
                       ) : (
-                        message.content
+                        <span dangerouslySetInnerHTML={{ __html: md.render(message.content) }} />
                       )}
                     </div>
                     {isUser && (
