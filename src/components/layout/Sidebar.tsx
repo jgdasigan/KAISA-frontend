@@ -7,7 +7,7 @@ import { cn } from "@/utils/cn";
 
 const navItems = [
   { icon: MessageSquare, label: "New chat", key: "workspace" },
-  { icon: History, label: "Chat history", key: "chats" },
+  // { icon: History, label: "Chat history", key: "chats" },
   { icon: Info, label: "About Us", key: "info" },
 ];
 
