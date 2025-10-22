@@ -93,6 +93,23 @@ export default function Home() {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
 
+  // On connect, if we have a stored session id, request history via existingChat
+  useEffect(() => {
+    try {
+      const lastId = localStorage.getItem("kaisa_last_session_id");
+      if (isConnected && lastId && !sessionIdRef.current) {
+        const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+        void send({
+          action: "existingChat",
+          session_id: lastId,
+          user_input: "",
+          user_id: (userDetails?.id as string) || "demo-user",
+          last_msg_timestamp: now,
+        } as Record<string, unknown>);
+      }
+    } catch {}
+  }, [isConnected, send, userDetails?.id]);
+
   const landingMentors = useMemo(
     () => Object.values(agentProfiles),
     [agentProfiles],
@@ -253,11 +270,43 @@ export default function Home() {
         ? (Object.values(agentProfiles).find((meta) => meta.id === selectedAgentId) as (typeof agentProfiles)[keyof typeof agentProfiles])
         : DEFAULT_AGENT;
       const assistantId = assistantMeta.id;
-      // Handle context payload from backend to capture session_id
+      // Handle context payload from backend to capture session_id and optional history
       if ("chat_messages" in data && "session_id" in data) {
-        if (!sessionIdRef.current && typeof data.session_id === "string") {
-          setSessionId(data.session_id);
-          sessionIdRef.current = data.session_id;
+        const sid = (data as { session_id?: string }).session_id;
+        if (typeof sid === "string") {
+          setSessionId(sid);
+          sessionIdRef.current = sid;
+          try { localStorage.setItem("kaisa_last_session_id", sid); } catch {}
+        }
+        const history = (data as { chat_messages?: unknown[] }).chat_messages;
+        if (Array.isArray(history)) {
+          const parsed: ChatBubble[] = [];
+          history.forEach((entry) => {
+            if (!entry || typeof entry !== "object") return;
+            const obj = entry as Record<string, unknown>;
+            let role: "user" | "assistant" | undefined =
+              obj["role"] === "user" || obj["role"] === "assistant" ? (obj["role"] as "user" | "assistant") : undefined;
+            const messageText =
+              (typeof obj["message"] === "string" && (obj["message"] as string)) ||
+              (typeof obj["agent_response"] === "string" && (obj["agent_response"] as string)) ||
+              (typeof obj["user_input"] === "string" && (role = role ?? "user", obj["user_input"] as string)) ||
+              "";
+            if (!role) role = "assistant";
+            if (messageText) {
+              parsed.push({
+                id: createMessageId(),
+                role,
+                content: messageText,
+                agentId: role === "assistant" ? (selectedAgentId ?? DEFAULT_AGENT.id) : undefined,
+              });
+            }
+          });
+          if (parsed.length) {
+            setHasSessionStarted(true);
+            setIsChatVisible(true);
+            setMessages(parsed);
+            try { localStorage.setItem("kaisa_last_history", JSON.stringify(parsed)); } catch {}
+          }
         }
         return;
       }
@@ -611,6 +660,7 @@ export default function Home() {
                 const avatarAgent =
                   AGENT_PROFILES_BY_ID[message.agentId ?? ""] || DEFAULT_AGENT;
                 const isUser = message.role === "user";
+                const nameLabel = avatarAgent.displayName;
                 return (
                   <div
                     key={message.id}
@@ -627,33 +677,38 @@ export default function Home() {
                         className="h-10 w-10 rounded-2xl border border-white/60 bg-kaisa-blue/10 object-cover"
                       />
                     )}
-                    <div
-                      className={`rounded-3xl px-4 py-3 shadow-[0_18px_32px_-24px_rgba(37,56,88,0.35)] ${
-                        isUser
-                          ? "bg-kaisa-blue/80 text-white/90"
-                          : "bg-kaisa-blue/10 text-kaisa-midnight/90"
-                      }`}
-                    >
-                      {message.isAttachment ? (
-                        <div className="flex items-center gap-2">
-                          <Image src="/pdf.png" alt="PDF" width={24} height={24} className="h-6 w-6" />
-                          <div className="flex flex-col text-left">
-                            <span className="text-xs font-semibold truncate max-w-[220px]">{message.attachment?.fileName || "document.pdf"}</span>
-                            <span className="text-[10px] uppercase tracking-wide text-white/70">PDF</span>
-                          </div>
-                          {message.isUploading && (
-                            <span className="ml-2 flex items-center gap-1">
-                              <span className="uploading-dot" />
-                              <span className="uploading-dot" />
-                              <span className="uploading-dot" />
-                            </span>
-                          )}
-                        </div>
-                      ) : message.isStreaming && !message.content ? (
-                        <LoadingDots />
-                      ) : (
-                        <span dangerouslySetInnerHTML={{ __html: md.render(message.content) }} />
+                    <div className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
+                      {!isUser && (
+                        <div className={`mb-1 self-start ml-3 text-[10px] font-semibold uppercase tracking-wide text-kaisa-midnight/60`}>{nameLabel}</div>
                       )}
+                      <div
+                        className={`rounded-3xl px-4 py-3 shadow-[0_18px_32px_-24px_rgba(37,56,88,0.35)] ${
+                          isUser
+                            ? "bg-kaisa-blue/80 text-white/90"
+                            : "bg-kaisa-blue/10 text-kaisa-midnight/90"
+                        }`}
+                      >
+                        {message.isAttachment ? (
+                          <div className="flex items-center gap-2">
+                            <Image src="/pdf.png" alt="PDF" width={24} height={24} className="h-6 w-6" />
+                            <div className="flex flex-col text-left">
+                              <span className="text-xs font-semibold truncate max-w-[220px]">{message.attachment?.fileName || "document.pdf"}</span>
+                              <span className="text-[10px] uppercase tracking-wide text-white/70">PDF</span>
+                            </div>
+                            {message.isUploading && (
+                              <span className="ml-2 flex items-center gap-1">
+                                <span className="uploading-dot" />
+                                <span className="uploading-dot" />
+                                <span className="uploading-dot" />
+                              </span>
+                            )}
+                          </div>
+                        ) : message.isStreaming && !message.content ? (
+                          <LoadingDots />
+                        ) : (
+                          <span dangerouslySetInnerHTML={{ __html: md.render(message.content) }} />
+                        )}
+                      </div>
                     </div>
                     {isUser && (
                       <Image

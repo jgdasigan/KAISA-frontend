@@ -87,10 +87,10 @@ export const Sidebar = ({ onSelectNewChat, onSelectChats, onSelectInfo }: Sideba
           </div>
           <div className={cn("min-w-0 flex-1 transition-all", collapsed && "hidden")}> 
             <span className="block truncate text-sm font-semibold text-kaisa-midnight">
-              {authStore.userDetails?.given_name || "KAISA User"}
+              {authStore.userDetails?.given_name || "Student"}
             </span>
             <span className="block truncate text-[11px] text-kaisa-midnight/60">
-              {authStore.userDetails?.email || "user@kaisa.ai"}
+              {authStore.userDetails?.email || "student@kaisa.com"}
             </span>
           </div>
         </div>
