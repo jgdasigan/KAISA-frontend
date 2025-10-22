@@ -15,14 +15,15 @@ type AppShellProps = {
 export const AppShell = ({ children, onNewChat, showAgentDropdown = true }: AppShellProps) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
-  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  type HistoryItem = { role: "user" | "assistant"; content: string };
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const { send, isConnected } = useWsStore();
 
   useEffect(() => {
     if (!showHistory) return;
     try {
       const raw = typeof localStorage !== "undefined" ? localStorage.getItem("kaisa_last_history") : null;
-      const parsed = raw ? (JSON.parse(raw) as any[]) : [];
+      const parsed = raw ? (JSON.parse(raw) as HistoryItem[]) : [];
       setHistoryItems(parsed);
       if (!parsed.length) {
         const lastId = typeof localStorage !== "undefined" ? localStorage.getItem("kaisa_last_session_id") : null;
@@ -52,10 +53,10 @@ export const AppShell = ({ children, onNewChat, showAgentDropdown = true }: AppS
           <div className="hidden w-full max-w-sm border-r border-white/10 bg-white/60 px-5 py-6 shadow-lg backdrop-blur lg:block">
             <div className="flex h-full flex-col gap-2 overflow-y-auto text-sm text-kaisa-midnight">
               <span className="pb-2 text-xs font-semibold uppercase tracking-wide text-kaisa-midnight/60">Recent</span>
-              {historyItems.slice().reverse().map((m, idx) => (
+              {historyItems.slice().reverse().map((m: HistoryItem, idx: number) => (
                 <div key={idx} className="rounded-xl bg-white/80 p-2 shadow-sm">
                   <div className="text-[11px] uppercase tracking-wide text-kaisa-midnight/50">{m.role === "user" ? "You" : "Assistant"}</div>
-                  <div className="line-clamp-3 text-[12px] text-kaisa-midnight/90" dangerouslySetInnerHTML={{ __html: m.content || "" }} />
+                  <div className="line-clamp-3 text-[12px] text-kaisa-midnight/90">{m.content?.replace(/<[^>]+>/g, "")}</div>
                 </div>
               ))}
               {!historyItems.length && (
