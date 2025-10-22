@@ -413,8 +413,8 @@ export default function Home() {
           <section className="mx-auto flex h-full w-full max-w-5xl flex-col gap-3">
             <div className="pt-15 text-center">
               <h1 className="text-xl font-bold sm:text-2xl md:text-2xl">
-                <span className="text-kaisa-blue/80">{greetingLabel}, </span>
-                <span className="text-kaisa-blue/80">{userName}.👋</span>
+                <span className="text-kaisa-blue/80">{greetingLabel} </span>
+                <span className="text-kaisa-blue/80">{userName}👋</span>
               </h1>
             </div>
 
